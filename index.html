@@ -4,117 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>USPSA Stage Setup</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-        background-color: #f4f4f4;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding-top: 20px;
-      }
-
-      h1,
-      h2,
-      h3 {
-        margin-bottom: 10px;
-        color: #333;
-      }
-
-      h2,
-      h3 {
-        margin-top: 20px;
-      }
-
-      .stage-setup,
-      .score-info {
-        background-color: #fff;
-        border-radius: 8px;
-        padding: 20px;
-        width: 90%;
-        max-width: 500px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        margin-bottom: 20px;
-      }
-
-      .stage-setup div,
-      .score-info div {
-        margin-bottom: 15px;
-      }
-
-      button {
-        background-color: #007bff;
-        color: white;
-        padding: 12px 20px;
-        font-size: 16px;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        width: 100%;
-        margin-top: 5px;
-      }
-
-      button:hover {
-        background-color: #0056b3;
-      }
-
-      table {
-        width: 90%;
-        max-width: 800px;
-        margin-top: 20px;
-        border-collapse: collapse;
-      }
-
-      table th,
-      table td {
-        padding: 12px;
-        text-align: center;
-        border: 1px solid #ddd;
-      }
-
-      table th {
-        background-color: #007bff;
-        color: white;
-      }
-
-      @media (max-width: 768px) {
-        body {
-          padding: 10px;
-        }
-
-        .stage-setup,
-        .score-info {
-          width: 100%;
-          padding: 15px;
-        }
-
-        button {
-          font-size: 18px;
-          padding: 15px;
-        }
-
-        table th,
-        table td {
-          padding: 10px;
-          font-size: 14px;
-        }
-      }
-
-      input {
-        width: 100%;
-        padding: 10px;
-        margin-top: 5px;
-        border-radius: 5px;
-        border: 1px solid #ddd;
-      }
-
-      input:focus {
-        border-color: #007bff;
-        outline: none;
-      }
-    </style>
+    <link rel="stylesheet" href="./styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
   </head>
   <body>
     <h1>USPSA Stage Setup</h1>
@@ -159,7 +53,8 @@
       <button onclick="calculateScore()">Calculate Score</button>
     </div>
 
-    <div>
+    <!-- Centering the score history and table -->
+    <div class="score-history-container">
       <h3>Score History</h3>
       <table id="scoreTable">
         <thead>
@@ -169,6 +64,8 @@
             <th>Scored Stage Points</th>
             <th>Time (seconds)</th>
             <th>Final Result</th>
+            <th>Show Stats</th>
+            <th>Delete Entry</th>
           </tr>
         </thead>
         <tbody>
