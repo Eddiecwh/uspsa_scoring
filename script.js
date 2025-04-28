@@ -10,7 +10,6 @@ document.addEventListener("DOMContentLoaded", function () {
     steel: 5,
   };
 
-  // Utility to update total points
   const updateTotalPoints = () => {
     const totalPaperPoints = stage.paperTargets * 10;
     const totalSteelPoints = stage.steelTargets * stage.steel;
@@ -19,7 +18,6 @@ document.addEventListener("DOMContentLoaded", function () {
     return totalPoints;
   };
 
-  // Function to update paper and steel targets
   const updateTargetCount = (targetType, operation) => {
     if (targetType === "paper") {
       stage.paperTargets += operation;
@@ -31,13 +29,11 @@ document.addEventListener("DOMContentLoaded", function () {
     updateTotalPoints();
   };
 
-  // Event listeners for adding/removing targets
   window.addPaperTarget = () => updateTargetCount("paper", 1);
   window.removePaperTarget = () => updateTargetCount("paper", -1);
   window.addSteelTarget = () => updateTargetCount("steel", 1);
   window.removeSteelTarget = () => updateTargetCount("steel", -1);
 
-  // Helper to set up increment/decrement buttons
   const setupIncrementDecrement = (minusBtnId, plusBtnId, inputId) => {
     const minusBtn = document.getElementById(minusBtnId);
     const plusBtn = document.getElementById(plusBtnId);
@@ -59,7 +55,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   };
 
-  // Setup increment/decrement for each hit type
   ["alpha", "charlie", "delta", "mike", "steel"].forEach((hitType) =>
     setupIncrementDecrement(
       `${hitType}Minus`,
@@ -68,7 +63,6 @@ document.addEventListener("DOMContentLoaded", function () {
     )
   );
 
-  // Function to create buttons
   const createButton = (text, onClick) => {
     const button = document.createElement("button");
     button.classList.add("action-button");
@@ -83,14 +77,12 @@ document.addEventListener("DOMContentLoaded", function () {
       .getElementsByTagName("tbody")[0];
     const newRow = tableBody.insertRow();
 
-    // Inserting cells at the correct indices
     const nameCell = newRow.insertCell(0); // Shooter Name
     const timeCell = newRow.insertCell(1); // Time (seconds)
     const finalResultCell = newRow.insertCell(2); // Final Result
     const statsCell = newRow.insertCell(3); // Show Stats
     const deleteCell = newRow.insertCell(4); // Delete button
 
-    // Store hits as data attributes
     newRow.setAttribute(
       "data-alpha",
       document.getElementById("alphaHits").value || 0
@@ -112,7 +104,6 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("steelHits").value || 0
     );
 
-    // Show Stats button
     const statsButton = createButton("Show Stats", function () {
       alert(
         `Alpha: ${newRow.getAttribute(
@@ -128,19 +119,16 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     statsCell.appendChild(statsButton);
 
-    // Delete button
     const deleteButton = createButton("🗑️ Delete", function () {
       tableBody.removeChild(newRow);
     });
     deleteCell.appendChild(deleteButton);
 
-    // Setting the text content for each cell
     nameCell.textContent = shooterName;
     timeCell.textContent = totalTime;
     finalResultCell.textContent = finalResult.toFixed(2);
   };
 
-  // Function to handle score calculation and validation
   window.calculateScore = () => {
     const alphaHits = parseInt(document.getElementById("alphaHits").value) || 0;
     const charlieHits =
@@ -151,7 +139,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const totalTime =
       parseFloat(document.getElementById("totalTime").value) || 0;
 
-    // Validation for paper hits
     const maxPaperHits = stage.paperTargets * 2;
     const totalPaperHits = alphaHits + charlieHits + deltaHits;
     if (totalPaperHits > maxPaperHits) {
@@ -161,14 +148,12 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // Validation for steel hits
     const maxSteelHits = stage.steelTargets;
     if (steelHits > maxSteelHits) {
       alert(`Total steel hits cannot exceed ${maxSteelHits}.`);
       return;
     }
 
-    // Calculate scores
     const paperScore =
       alphaHits * stage.alpha +
       charlieHits * stage.charlie +
@@ -176,7 +161,6 @@ document.addEventListener("DOMContentLoaded", function () {
       mikeHits * stage.mike;
     const steelScore = steelHits * stage.steel;
     const totalScore = paperScore + steelScore;
-    const totalPoints = updateTotalPoints();
     const finalResult = totalScore / totalTime;
 
     console.log("totalTime: " + totalTime);
@@ -186,18 +170,12 @@ document.addEventListener("DOMContentLoaded", function () {
     addScoreToTable(shooterName, totalTime, finalResult);
   };
 
-  // Initialize total points
   updateTotalPoints();
 });
 
-// Function to clear current score inputs
 window.clearScores = function () {
-  // Clear the current score input fields
   const inputFields = document.querySelectorAll("input[type='number']");
   inputFields.forEach((input) => (input.value = 0));
 
-  // Optionally, reset any other fields, like the shooter name
   document.getElementById("shooterName").value = "";
-
-  // If you have any other fields to reset, add them here
 };

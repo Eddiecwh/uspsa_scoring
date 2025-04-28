@@ -11,10 +11,15 @@
     />
   </head>
   <body>
-    <h1>USPSA Stage Setup</h1>
-
+    <h1 class="light-text">USPSA Stage Setup</h1>
+    <h2
+      class="light-text"
+      style="font-size: large; margin-top: 0; font-style: italic"
+    >
+      Eddie Chan 2025
+    </h2>
     <div class="stage-setup">
-      <h2>Stage Settings</h2>
+      <h2 class="light-text">Stage Settings</h2>
       <div>
         <button class="add" onclick="addPaperTarget()">Add Paper Target</button>
         <button class="remove" onclick="removePaperTarget()">
@@ -43,14 +48,16 @@
 
     <div class="score-info">
       <h2>Enter Score Information</h2>
-
-      <input type="number" id="totalTime" placeholder="Total Time" />
       <input type="text" id="shooterName" placeholder="Shooter's Name" />
+      <input type="number" id="totalTime" placeholder="Total Time" />
 
       <br />
       <br />
 
       <div class="scorable-menu">
+        <div class="aNote">
+          <span>A</span>
+        </div>
         <button class="minus" id="alphaMinus">-</button>
         <input
           class="scores"
@@ -58,10 +65,13 @@
           id="alphaHits"
           placeholder="Alpha Hits"
         />
+
         <button class="plus" id="alphaPlus">+</button>
       </div>
-
       <div class="scorable-menu">
+        <div class="aNote">
+          <span>C</span>
+        </div>
         <button class="minus" id="charlieMinus">-</button>
         <input
           class="scores"
@@ -69,10 +79,13 @@
           id="charlieHits"
           placeholder="Charlie Hits"
         />
+
         <button class="plus" id="charliePlus">+</button>
       </div>
-
       <div class="scorable-menu">
+        <div class="aNote">
+          <span>D</span>
+        </div>
         <button class="minus" id="deltaMinus">-</button>
         <input
           class="scores"
@@ -82,8 +95,10 @@
         />
         <button class="plus" id="deltaPlus">+</button>
       </div>
-
       <div class="scorable-menu">
+        <div class="aNote">
+          <span>M</span>
+        </div>
         <button class="minus" id="mikeMinus">-</button>
         <input
           class="scores"
@@ -95,6 +110,9 @@
       </div>
 
       <div class="scorable-menu">
+        <div class="aNote">
+          <span>S</span>
+        </div>
         <button class="minus" id="steelMinus">-</button>
         <input type="number" id="steelHits" placeholder="Steel Hits" />
         <button class="plus" id="steelPlus">+</button>
@@ -103,13 +121,12 @@
       <br />
 
       <button onclick="clearScores()">Clear</button>
-
       <button onclick="calculateScore()">Calculate Score</button>
     </div>
 
     <!-- Centering the score history and table -->
     <div class="score-history-container">
-      <h3>Score History</h3>
+      <h3 class="light-text">Score History</h3>
       <table id="scoreTable">
         <thead>
           <tr>

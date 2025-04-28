@@ -1,4 +1,7 @@
 /* General styles */
+* {
+  color: white;
+}
 body {
   font-family: Arial, sans-serif;
   margin: 0;
@@ -8,13 +11,18 @@ body {
   flex-direction: column;
   align-items: center;
   padding-top: 20px;
+  touch-action: manipulation;
+  background-color: #212121;
+}
+.light-text {
+  color: white !important;
 }
 
 h1,
 h2,
 h3 {
   margin-bottom: 10px;
-  color: #333;
+  color: white;
 }
 
 h2,
@@ -24,19 +32,20 @@ h3 {
 
 .stage-setup,
 .score-info {
-  background-color: #fff;
+  background-color: black;
+  color: white;
   border-radius: 8px;
   padding: 20px;
   width: 90%;
   max-width: 500px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   margin-bottom: 20px;
+  text-align: center;
 }
 
-.stage-setup div,
-.score-info div {
+/* .score-info div {
   margin-bottom: 15px;
-}
+} */
 
 .scorable-menu {
   display: flex;
@@ -45,11 +54,20 @@ h3 {
   align-items: center;
   margin: 0 auto;
   gap: 10px;
+  position: relative;
 }
 
-.scorable-menu input {
+.scorable-menu .scorable-menu input {
   width: 50%;
   text-align: center;
+}
+.add {
+  color: white;
+  background-color: #ff7300;
+}
+
+.remove {
+  color: black;
 }
 
 .plus,
@@ -60,8 +78,24 @@ h3 {
   align-items: center;
 }
 
+.plus {
+  background-color: #ff7300;
+}
+
+.aNote {
+  /* display: none; */
+  border: 1px solid gray;
+  border-radius: 8px;
+  color: #333;
+  padding: 0.6em;
+  margin-top: 0.2em;
+  width: 1.5em;
+  text-align: center;
+  font-weight: bold;
+}
+
 button {
-  background-color: #007bff;
+  background-color: #ed8936;
   color: white;
   padding: 12px 20px;
   font-size: 16px;
@@ -93,7 +127,7 @@ table td {
 }
 
 table th {
-  background-color: #007bff;
+  background-color: black;
   color: white;
 }
 
@@ -159,8 +193,11 @@ input {
   padding: 12px;
   margin-top: 5px;
   border-radius: 5px;
-  border: 1px solid #ddd;
+  border: 1px solid black;
   box-sizing: border-box;
+  text-align: center;
+  background: #212121;
+  color: white;
 }
 
 input:focus {
@@ -170,14 +207,16 @@ input:focus {
 
 /* Action button styles */
 .action-button {
-  background-color: #007bff;
-  color: white;
+  background-color: #ed8936;
+  text-align: center;
+  font-style: italic;
+  color: black;
   padding: 8px 12px;
   font-size: 14px;
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  margin: 5px;
+  margin: 0 auto;
 }
 
 .action-button:hover {
