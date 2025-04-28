@@ -28,13 +28,13 @@
         <button class="remove" onclick="removeSteelTarget()">
           Remove Steel Target
         </button>
-        <p>Steel Targets: <span id="steelCount">4</span></p>
+        <p>Steel Targets: <span id="steelCount">0</span></p>
       </div>
 
-      <div>
+      <!-- <div>
         <button onclick="toggleMajor()">Toggle Major Scoring</button>
         <p>Major Scoring: <span id="majorStatus">True</span></p>
-      </div>
+      </div> -->
 
       <p id="totalPointsDisplay">
         Total Points: <span id="totalPoints">0</span>
@@ -43,13 +43,67 @@
 
     <div class="score-info">
       <h2>Enter Score Information</h2>
-      <input type="text" id="shooterName" placeholder="Shooter's Name" />
-      <input type="number" id="alphaHits" placeholder="Alpha Hits" />
-      <input type="number" id="charlieHits" placeholder="Charlie Hits" />
-      <input type="number" id="deltaHits" placeholder="Delta Hits" />
-      <input type="number" id="mikeHits" placeholder="Mike Hits" />
-      <input type="number" id="steelHits" placeholder="Steel Hits" />
+
       <input type="number" id="totalTime" placeholder="Total Time" />
+      <input type="text" id="shooterName" placeholder="Shooter's Name" />
+
+      <br />
+      <br />
+
+      <div class="scorable-menu">
+        <button class="minus" id="alphaMinus">-</button>
+        <input
+          class="scores"
+          type="number"
+          id="alphaHits"
+          placeholder="Alpha Hits"
+        />
+        <button class="plus" id="alphaPlus">+</button>
+      </div>
+
+      <div class="scorable-menu">
+        <button class="minus" id="charlieMinus">-</button>
+        <input
+          class="scores"
+          type="number"
+          id="charlieHits"
+          placeholder="Charlie Hits"
+        />
+        <button class="plus" id="charliePlus">+</button>
+      </div>
+
+      <div class="scorable-menu">
+        <button class="minus" id="deltaMinus">-</button>
+        <input
+          class="scores"
+          type="number"
+          id="deltaHits"
+          placeholder="Delta Hits"
+        />
+        <button class="plus" id="deltaPlus">+</button>
+      </div>
+
+      <div class="scorable-menu">
+        <button class="minus" id="mikeMinus">-</button>
+        <input
+          class="scores"
+          type="number"
+          id="mikeHits"
+          placeholder="Mike Hits"
+        />
+        <button class="plus" id="mikePlus">+</button>
+      </div>
+
+      <div class="scorable-menu">
+        <button class="minus" id="steelMinus">-</button>
+        <input type="number" id="steelHits" placeholder="Steel Hits" />
+        <button class="plus" id="steelPlus">+</button>
+      </div>
+
+      <br />
+
+      <button onclick="clearScores()">Clear</button>
+
       <button onclick="calculateScore()">Calculate Score</button>
     </div>
 
@@ -60,10 +114,8 @@
         <thead>
           <tr>
             <th>Shooter Name</th>
-            <th>Total Stage Points</th>
-            <th>Scored Stage Points</th>
             <th>Time (seconds)</th>
-            <th>Final Result</th>
+            <th>HF</th>
             <th>Show Stats</th>
             <th>Delete Entry</th>
           </tr>
