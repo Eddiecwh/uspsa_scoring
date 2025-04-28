@@ -1,89 +1,96 @@
 document.addEventListener("DOMContentLoaded", function () {
-  let stage = {
+  const stage = {
     major: true,
     paperTargets: 6,
-    steelTargets: 4,
+    steelTargets: 0,
     alpha: 5,
-    charlie: 4,
+    charlie: 3,
     delta: 1,
     mike: -10,
     steel: 5,
   };
 
-  // Function to calculate total points
-  function calculateTotalPoints() {
-    let totalPaperPoints = stage.paperTargets * 10;
-    let totalSteelPoints = stage.steelTargets * stage.steel;
-    let totalPoints = totalPaperPoints + totalSteelPoints;
+  // Utility to update total points
+  const updateTotalPoints = () => {
+    const totalPaperPoints = stage.paperTargets * 10;
+    const totalSteelPoints = stage.steelTargets * stage.steel;
+    const totalPoints = totalPaperPoints + totalSteelPoints;
     document.getElementById("totalPoints").textContent = totalPoints;
     return totalPoints;
-  }
-
-  // Function to add a paper target
-  window.addPaperTarget = function () {
-    stage.paperTargets++;
-    document.getElementById("paperCount").textContent = stage.paperTargets;
-    calculateTotalPoints();
   };
 
-  // Function to remove a paper target
-  window.removePaperTarget = function () {
-    if (stage.paperTargets > 0) {
-      stage.paperTargets--;
+  // Function to update paper and steel targets
+  const updateTargetCount = (targetType, operation) => {
+    if (targetType === "paper") {
+      stage.paperTargets += operation;
       document.getElementById("paperCount").textContent = stage.paperTargets;
-      calculateTotalPoints();
-    }
-  };
-
-  // Function to add a steel target
-  window.addSteelTarget = function () {
-    stage.steelTargets++;
-    document.getElementById("steelCount").textContent = stage.steelTargets;
-    calculateTotalPoints();
-  };
-
-  // Function to remove a steel target
-  window.removeSteelTarget = function () {
-    if (stage.steelTargets > 0) {
-      stage.steelTargets--;
+    } else if (targetType === "steel") {
+      stage.steelTargets += operation;
       document.getElementById("steelCount").textContent = stage.steelTargets;
-      calculateTotalPoints();
     }
+    updateTotalPoints();
   };
 
-  // Function to handle the "Show Stats" button click
-  function showStats(row) {
-    const alphaHits = row.getAttribute("data-alpha");
-    const charlieHits = row.getAttribute("data-charlie");
-    const deltaHits = row.getAttribute("data-delta");
-    const mikeHits = row.getAttribute("data-mike");
-    const steelHits = row.getAttribute("data-steel");
+  // Event listeners for adding/removing targets
+  window.addPaperTarget = () => updateTargetCount("paper", 1);
+  window.removePaperTarget = () => updateTargetCount("paper", -1);
+  window.addSteelTarget = () => updateTargetCount("steel", 1);
+  window.removeSteelTarget = () => updateTargetCount("steel", -1);
 
-    const stats = `Alpha: ${alphaHits}, Charlie: ${charlieHits}, Delta: ${deltaHits}, Mike: ${mikeHits}, Steel: ${steelHits}`;
-    row.cells[5].textContent = stats; // Add stats to the "Show Stats" column
-  }
+  // Helper to set up increment/decrement buttons
+  const setupIncrementDecrement = (minusBtnId, plusBtnId, inputId) => {
+    const minusBtn = document.getElementById(minusBtnId);
+    const plusBtn = document.getElementById(plusBtnId);
+    const input = document.getElementById(inputId);
 
-  function addScoreToTable(
-    shooterName,
-    totalPoints,
-    totalScore,
-    totalTime,
-    finalResult
-  ) {
+    if (!minusBtn || !plusBtn || !input) {
+      console.error(`Element not found:`, { minusBtnId, plusBtnId, inputId });
+      return;
+    }
+
+    input.value = input.value || 0;
+
+    minusBtn.addEventListener("click", () => {
+      input.value = Math.max(0, parseInt(input.value) - 1);
+    });
+
+    plusBtn.addEventListener("click", () => {
+      input.value = parseInt(input.value) + 1;
+    });
+  };
+
+  // Setup increment/decrement for each hit type
+  ["alpha", "charlie", "delta", "mike", "steel"].forEach((hitType) =>
+    setupIncrementDecrement(
+      `${hitType}Minus`,
+      `${hitType}Plus`,
+      `${hitType}Hits`
+    )
+  );
+
+  // Function to create buttons
+  const createButton = (text, onClick) => {
+    const button = document.createElement("button");
+    button.classList.add("action-button");
+    button.textContent = text;
+    button.onclick = onClick;
+    return button;
+  };
+
+  const addScoreToTable = (shooterName, totalTime, finalResult) => {
     const tableBody = document
       .getElementById("scoreTable")
       .getElementsByTagName("tbody")[0];
     const newRow = tableBody.insertRow();
 
-    const nameCell = newRow.insertCell(0);
-    const totalPointsCell = newRow.insertCell(1);
-    const scoredPointsCell = newRow.insertCell(2);
-    const timeCell = newRow.insertCell(3);
-    const finalResultCell = newRow.insertCell(4);
-    const statsCell = newRow.insertCell(5); // Column for Show Stats button
-    const deleteCell = newRow.insertCell(6); // Column for Delete button
+    // Inserting cells at the correct indices
+    const nameCell = newRow.insertCell(0); // Shooter Name
+    const timeCell = newRow.insertCell(1); // Time (seconds)
+    const finalResultCell = newRow.insertCell(2); // Final Result
+    const statsCell = newRow.insertCell(3); // Show Stats
+    const deleteCell = newRow.insertCell(4); // Delete button
 
-    // Store hits as data attributes for stats button to use
+    // Store hits as data attributes
     newRow.setAttribute(
       "data-alpha",
       document.getElementById("alphaHits").value || 0
@@ -105,16 +112,7 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("steelHits").value || 0
     );
 
-    // Create a common button style for both actions
-    function createButton(text, onClick) {
-      const button = document.createElement("button");
-      button.classList.add("action-button");
-      button.textContent = text;
-      button.onclick = onClick;
-      return button;
-    }
-
-    // Add a Show Stats button
+    // Show Stats button
     const statsButton = createButton("Show Stats", function () {
       alert(
         `Alpha: ${newRow.getAttribute(
@@ -130,78 +128,76 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     statsCell.appendChild(statsButton);
 
-    // Add a Delete button with trash can icon
+    // Delete button
     const deleteButton = createButton("🗑️ Delete", function () {
-      tableBody.removeChild(newRow); // Removes the row from the table
+      tableBody.removeChild(newRow);
     });
     deleteCell.appendChild(deleteButton);
 
+    // Setting the text content for each cell
     nameCell.textContent = shooterName;
-    totalPointsCell.textContent = totalPoints;
-    scoredPointsCell.textContent = totalScore;
     timeCell.textContent = totalTime;
     finalResultCell.textContent = finalResult.toFixed(2);
-  }
+  };
 
-  // Function to delete a row
-  function deleteRow(row) {
-    const tableBody = document
-      .getElementById("scoreTable")
-      .getElementsByTagName("tbody")[0];
-    tableBody.removeChild(row);
-  }
-
-  window.calculateScore = function () {
-    let alphaHits = parseInt(document.getElementById("alphaHits").value) || 0;
-    let charlieHits =
+  // Function to handle score calculation and validation
+  window.calculateScore = () => {
+    const alphaHits = parseInt(document.getElementById("alphaHits").value) || 0;
+    const charlieHits =
       parseInt(document.getElementById("charlieHits").value) || 0;
-    let deltaHits = parseInt(document.getElementById("deltaHits").value) || 0;
-    let mikeHits = parseInt(document.getElementById("mikeHits").value) || 0;
-    let steelHits = parseInt(document.getElementById("steelHits").value) || 0;
-    let totalTime = parseInt(document.getElementById("totalTime").value) || 0;
+    const deltaHits = parseInt(document.getElementById("deltaHits").value) || 0;
+    const mikeHits = parseInt(document.getElementById("mikeHits").value) || 0;
+    const steelHits = parseInt(document.getElementById("steelHits").value) || 0;
+    const totalTime =
+      parseFloat(document.getElementById("totalTime").value) || 0;
 
-    // Validation for paper targets hits
+    // Validation for paper hits
     const maxPaperHits = stage.paperTargets * 2;
     const totalPaperHits = alphaHits + charlieHits + deltaHits;
-
     if (totalPaperHits > maxPaperHits) {
       alert(
-        `Total paper hits (Alpha + Charlie + Delta) cannot exceed ${maxPaperHits} hits.`
+        `Total paper hits (Alpha + Charlie + Delta) cannot exceed ${maxPaperHits}.`
       );
-      return; // Stop the calculation
+      return;
     }
 
     // Validation for steel hits
     const maxSteelHits = stage.steelTargets;
-
     if (steelHits > maxSteelHits) {
       alert(`Total steel hits cannot exceed ${maxSteelHits}.`);
-      return; // Stop the calculation
+      return;
     }
 
-    // Calculate total score
-    let paperScore =
+    // Calculate scores
+    const paperScore =
       alphaHits * stage.alpha +
       charlieHits * stage.charlie +
       deltaHits * stage.delta +
       mikeHits * stage.mike;
+    const steelScore = steelHits * stage.steel;
+    const totalScore = paperScore + steelScore;
+    const totalPoints = updateTotalPoints();
+    const finalResult = totalScore / totalTime;
 
-    let steelScore = steelHits * stage.steel;
-    let totalScore = paperScore + steelScore;
-    let totalPoints = calculateTotalPoints();
-    let finalResult = totalScore / totalTime;
+    console.log("totalTime: " + totalTime);
 
-    let shooterName =
+    const shooterName =
       document.getElementById("shooterName").value || "Unknown Shooter";
-    addScoreToTable(
-      shooterName,
-      totalPoints,
-      totalScore,
-      totalTime,
-      finalResult
-    );
+    addScoreToTable(shooterName, totalTime, finalResult);
   };
 
   // Initialize total points
-  calculateTotalPoints();
+  updateTotalPoints();
 });
+
+// Function to clear current score inputs
+window.clearScores = function () {
+  // Clear the current score input fields
+  const inputFields = document.querySelectorAll("input[type='number']");
+  inputFields.forEach((input) => (input.value = 0));
+
+  // Optionally, reset any other fields, like the shooter name
+  document.getElementById("shooterName").value = "";
+
+  // If you have any other fields to reset, add them here
+};
