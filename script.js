@@ -1,3 +1,11 @@
+const createButton = (text, onClick) => {
+  const button = document.createElement("button");
+  button.classList.add("action-button");
+  button.textContent = text;
+  button.onclick = onClick;
+  return button;
+};
+
 document.addEventListener("DOMContentLoaded", function () {
   const stage = {
     major: false,
@@ -64,15 +72,12 @@ document.addEventListener("DOMContentLoaded", function () {
     )
   );
 
-  const createButton = (text, onClick) => {
-    const button = document.createElement("button");
-    button.classList.add("action-button");
-    button.textContent = text;
-    button.onclick = onClick;
-    return button;
-  };
-
   const addScoreToTable = (shooterName, totalTime, finalResult) => {
+    const savedData = JSON.parse(localStorage.getItem("scoreHistory") || "[]");
+
+    // Create a unique ID for each entry using the current timestamp
+    let uniqueID = Date.now();
+
     const tableBody = document
       .getElementById("scoreTable")
       .getElementsByTagName("tbody")[0];
@@ -84,6 +89,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const statsCell = newRow.insertCell(3); // Show Stats
     const deleteCell = newRow.insertCell(4); // Delete button
 
+    // Set additional attributes like hits
+    newRow.setAttribute("data-id", uniqueID); // Set unique ID here
     newRow.setAttribute(
       "data-alpha",
       document.getElementById("alphaHits").value || 0
@@ -109,6 +116,7 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("noshootHits").value || 0
     );
 
+    // Create the "Show Stats" button
     const statsButton = createButton("Show Stats", function () {
       alert(
         `Alpha: ${newRow.getAttribute(
@@ -126,14 +134,33 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     statsCell.appendChild(statsButton);
 
+    // Create the "Delete" button
     const deleteButton = createButton("🗑️ Delete", function () {
-      tableBody.removeChild(newRow);
+      deleteEntry(this);
     });
     deleteCell.appendChild(deleteButton);
 
+    // Set the cells with shooter information
     nameCell.textContent = shooterName;
     timeCell.textContent = totalTime;
     finalResultCell.textContent = finalResult.toFixed(2);
+
+    // Save this new entry to localStorage with the unique ID
+    const newEntry = {
+      id: uniqueID, // Include unique ID in the saved entry
+      name: shooterName,
+      time: totalTime,
+      hf: finalResult.toFixed(2),
+      alpha: newRow.getAttribute("data-alpha"),
+      charlie: newRow.getAttribute("data-charlie"),
+      delta: newRow.getAttribute("data-delta"),
+      steel: newRow.getAttribute("data-steel"),
+      mike: newRow.getAttribute("data-mike"),
+      noshoot: newRow.getAttribute("data-noshoot"),
+    };
+
+    savedData.push(newEntry);
+    localStorage.setItem("scoreHistory", JSON.stringify(savedData));
   };
 
   window.calculateScore = () => {
@@ -178,6 +205,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const shooterName =
       document.getElementById("shooterName").value || "Unknown Shooter";
     addScoreToTable(shooterName, totalTime, finalResult);
+
+    saveTableToLocalStorage();
   };
 
   updateTotalPoints();
@@ -205,8 +234,9 @@ function addRow(
     .getElementById("scoreTable")
     .getElementsByTagName("tbody")[0];
 
-  // Create a new row
   const newRow = table.insertRow();
+  const uniqueID = Date.now(); // Generate a unique ID for this row
+  newRow.setAttribute("data-id", uniqueID); // Assign the unique ID to the row
   newRow.setAttribute("data-alpha", alpha);
   newRow.setAttribute("data-charlie", charlie);
   newRow.setAttribute("data-delta", delta);
@@ -214,7 +244,6 @@ function addRow(
   newRow.setAttribute("data-steel", steel);
   newRow.setAttribute("data-noshoot", noshoot);
 
-  // Add cells for the row
   const shooterNameCell = newRow.insertCell(0);
   shooterNameCell.textContent = shooterName;
 
@@ -234,9 +263,11 @@ function addRow(
 
   const deleteCell = newRow.insertCell(4);
   const deleteButton = createButton("Delete", function () {
-    table.deleteRow(newRow.rowIndex);
+    deleteEntry(this);
   });
   deleteCell.appendChild(deleteButton);
+
+  saveTableToLocalStorage();
 }
 
 function generatePDF() {
@@ -247,7 +278,14 @@ function generatePDF() {
   const rows = table.getElementsByTagName("tr");
 
   doc.setFontSize(10);
-  doc.text("USPSA Stage Scores", 14, 20);
+
+  doc.setFont("Arial", "bold");
+  doc.text(
+    "USPSA HF Stage Score(s) - " + new Date(Date.now()).toString(),
+    14,
+    20
+  );
+  doc.setFont("Arial", "normal");
 
   const headers = [
     "Name",
@@ -263,12 +301,14 @@ function generatePDF() {
   let yPos = 30;
   const cellWidth = 20;
 
+  doc.setFont("Arial", "bold");
   headers.forEach((header, index) => {
     const xPos =
       14 + index * cellWidth + cellWidth / 2 - doc.getTextWidth(header) / 2;
     doc.text(header, xPos - 1, yPos - 0.5);
     doc.rect(14 + index * cellWidth - 1, yPos - 5, cellWidth, 6);
   });
+  doc.setFont("Arial", "normal");
 
   yPos += 6;
 
@@ -296,7 +336,102 @@ function generatePDF() {
     yPos += 6;
   }
 
-  doc.save("USPSA_Scores.pdf");
+  doc.save("USPSA_Scores" + Date.now() + ".pdf");
 }
 
 document.getElementById("downloadPDF").addEventListener("click", generatePDF);
+
+function saveTableToLocalStorage() {
+  const table = document.getElementById("scoreTable");
+  const rows = table.querySelectorAll("tbody tr");
+  const data = [];
+
+  rows.forEach((row) => {
+    data.push({
+      id: row.getAttribute("data-id"),
+      name: row.cells[0].innerText,
+      time: row.cells[1].innerText,
+      hf: row.cells[2].innerText,
+      alpha: row.getAttribute("data-alpha"),
+      charlie: row.getAttribute("data-charlie"),
+      delta: row.getAttribute("data-delta"),
+      steel: row.getAttribute("data-steel"),
+      mike: row.getAttribute("data-mike"),
+      noshoot: row.getAttribute("data-noshoot"),
+    });
+  });
+
+  localStorage.setItem("scoreHistory", JSON.stringify(data));
+}
+
+function loadTableFromLocalStorage() {
+  const savedData = JSON.parse(localStorage.getItem("scoreHistory") || "[]");
+
+  const tableBody = document.querySelector("#scoreTable tbody");
+  tableBody.innerHTML = "";
+
+  savedData.forEach((entry) => {
+    const newRow = document.createElement("tr");
+
+    newRow.setAttribute("data-id", entry.id);
+    newRow.setAttribute("data-alpha", entry.alpha);
+    newRow.setAttribute("data-charlie", entry.charlie);
+    newRow.setAttribute("data-delta", entry.delta);
+    newRow.setAttribute("data-steel", entry.steel);
+    newRow.setAttribute("data-mike", entry.mike);
+    newRow.setAttribute("data-noshoot", entry.noshoot);
+
+    const nameCell = newRow.insertCell(0);
+    nameCell.textContent = entry.name;
+
+    const timeCell = newRow.insertCell(1);
+    timeCell.textContent = entry.time;
+
+    const hfCell = newRow.insertCell(2);
+    hfCell.textContent = entry.hf;
+
+    const statsCell = newRow.insertCell(3);
+    statsCell.appendChild(
+      createButton("Show", function () {
+        showStats(this);
+      })
+    );
+
+    const deleteCell = newRow.insertCell(4);
+    deleteCell.appendChild(
+      createButton("Delete", function () {
+        deleteEntry(this);
+      })
+    );
+
+    tableBody.appendChild(newRow);
+  });
+}
+
+function deleteEntry(button) {
+  const row = button.closest("tr");
+  const rowId = row.getAttribute("data-id");
+
+  row.remove();
+
+  const savedData = JSON.parse(localStorage.getItem("scoreHistory") || "[]");
+  const updatedData = savedData.filter(
+    (entry) => entry.id.toString() !== rowId
+  );
+  localStorage.setItem("scoreHistory", JSON.stringify(updatedData));
+}
+
+function showStats(button) {
+  const row = button.closest("tr");
+  alert(
+    `Alpha: ${row.getAttribute("data-alpha")}, Charlie: ${row.getAttribute(
+      "data-charlie"
+    )}, Delta: ${row.getAttribute("data-delta")}, Mike: ${row.getAttribute(
+      "data-mike"
+    )}, Steel: ${row.getAttribute("data-steel")}, Noshoot: ${row.getAttribute(
+      "data-noshoot"
+    )}`
+  );
+}
+
+window.addEventListener("DOMContentLoaded", loadTableFromLocalStorage);
