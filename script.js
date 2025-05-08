@@ -1,13 +1,14 @@
 document.addEventListener("DOMContentLoaded", function () {
   const stage = {
-    major: true,
-    paperTargets: 6,
+    major: false,
+    paperTargets: 0,
     steelTargets: 0,
     alpha: 5,
     charlie: 3,
     delta: 1,
     mike: -10,
     steel: 5,
+    noshoot: -10,
   };
 
   const updateTotalPoints = () => {
@@ -55,7 +56,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   };
 
-  ["alpha", "charlie", "delta", "mike", "steel"].forEach((hitType) =>
+  ["alpha", "charlie", "delta", "mike", "steel", "noshoot"].forEach((hitType) =>
     setupIncrementDecrement(
       `${hitType}Minus`,
       `${hitType}Plus`,
@@ -103,6 +104,10 @@ document.addEventListener("DOMContentLoaded", function () {
       "data-steel",
       document.getElementById("steelHits").value || 0
     );
+    newRow.setAttribute(
+      "data-noshoot",
+      document.getElementById("noshootHits").value || 0
+    );
 
     const statsButton = createButton("Show Stats", function () {
       alert(
@@ -114,7 +119,9 @@ document.addEventListener("DOMContentLoaded", function () {
           "data-delta"
         )}, Mike: ${newRow.getAttribute(
           "data-mike"
-        )}, Steel: ${newRow.getAttribute("data-steel")}`
+        )}, Steel: ${newRow.getAttribute(
+          "data-steel"
+        )}, Noshoot: ${newRow.getAttribute("data-noshoot")}`
       );
     });
     statsCell.appendChild(statsButton);
@@ -136,6 +143,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const deltaHits = parseInt(document.getElementById("deltaHits").value) || 0;
     const mikeHits = parseInt(document.getElementById("mikeHits").value) || 0;
     const steelHits = parseInt(document.getElementById("steelHits").value) || 0;
+    const noshootHits =
+      parseInt(document.getElementById("noshootHits").value) || 0;
     const totalTime =
       parseFloat(document.getElementById("totalTime").value) || 0;
 
@@ -158,7 +167,8 @@ document.addEventListener("DOMContentLoaded", function () {
       alphaHits * stage.alpha +
       charlieHits * stage.charlie +
       deltaHits * stage.delta +
-      mikeHits * stage.mike;
+      mikeHits * stage.mike +
+      noshootHits * stage.noshoot;
     const steelScore = steelHits * stage.steel;
     const totalScore = paperScore + steelScore;
     const finalResult = totalScore / totalTime;
@@ -179,3 +189,114 @@ window.clearScores = function () {
 
   document.getElementById("shooterName").value = "";
 };
+
+function addRow(
+  shooterName,
+  time,
+  alpha,
+  charlie,
+  delta,
+  mike,
+  steel,
+  noshoot,
+  hf
+) {
+  const table = document
+    .getElementById("scoreTable")
+    .getElementsByTagName("tbody")[0];
+
+  // Create a new row
+  const newRow = table.insertRow();
+  newRow.setAttribute("data-alpha", alpha);
+  newRow.setAttribute("data-charlie", charlie);
+  newRow.setAttribute("data-delta", delta);
+  newRow.setAttribute("data-mike", mike);
+  newRow.setAttribute("data-steel", steel);
+  newRow.setAttribute("data-noshoot", noshoot);
+
+  // Add cells for the row
+  const shooterNameCell = newRow.insertCell(0);
+  shooterNameCell.textContent = shooterName;
+
+  const timeCell = newRow.insertCell(1);
+  timeCell.textContent = time;
+
+  const hfCell = newRow.insertCell(2);
+  hfCell.textContent = hf;
+
+  const statsCell = newRow.insertCell(3);
+  const statsButton = createButton("Show Stats", function () {
+    alert(
+      `Alpha: ${alpha}, Charlie: ${charlie}, Delta: ${delta}, Mike: ${mike}, Steel: ${steel}, Noshoot: ${noshoot}`
+    );
+  });
+  statsCell.appendChild(statsButton);
+
+  const deleteCell = newRow.insertCell(4);
+  const deleteButton = createButton("Delete", function () {
+    table.deleteRow(newRow.rowIndex);
+  });
+  deleteCell.appendChild(deleteButton);
+}
+
+function generatePDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  const table = document.getElementById("scoreTable");
+  const rows = table.getElementsByTagName("tr");
+
+  doc.setFontSize(10);
+  doc.text("USPSA Stage Scores", 14, 20);
+
+  const headers = [
+    "Name",
+    "Time",
+    "HF",
+    "Alpha",
+    "Charlie",
+    "Delta",
+    "Steel",
+    "Mikes",
+    "Noshoots",
+  ];
+  let yPos = 30;
+  const cellWidth = 20;
+
+  headers.forEach((header, index) => {
+    const xPos =
+      14 + index * cellWidth + cellWidth / 2 - doc.getTextWidth(header) / 2;
+    doc.text(header, xPos - 1, yPos - 0.5);
+    doc.rect(14 + index * cellWidth - 1, yPos - 5, cellWidth, 6);
+  });
+
+  yPos += 6;
+
+  for (let i = 1; i < rows.length; i++) {
+    const cells = rows[i].getElementsByTagName("td");
+    let rowData = [];
+
+    rowData.push(cells[0].innerText); // Shooter Name
+    rowData.push(cells[1].innerText); // Time (seconds)
+    rowData.push(cells[2].innerText); // HF
+    rowData.push(rows[i].getAttribute("data-alpha")); // Alpha
+    rowData.push(rows[i].getAttribute("data-charlie")); // Charlie
+    rowData.push(rows[i].getAttribute("data-delta")); // Delta
+    rowData.push(rows[i].getAttribute("data-steel")); // Steel
+    rowData.push(rows[i].getAttribute("data-mike")); // Mikes
+    rowData.push(rows[i].getAttribute("data-noshoot")); // Noshoots
+
+    rowData.forEach((text, index) => {
+      const xPos =
+        14 + index * cellWidth + cellWidth / 2 - doc.getTextWidth(text) / 2;
+      doc.text(text, xPos - 1, yPos - 0.5);
+      doc.rect(14 + index * cellWidth - 1, yPos - 5, cellWidth, 6);
+    });
+
+    yPos += 6;
+  }
+
+  doc.save("USPSA_Scores.pdf");
+}
+
+document.getElementById("downloadPDF").addEventListener("click", generatePDF);

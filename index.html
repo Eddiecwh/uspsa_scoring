@@ -3,12 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>USPSA Stage Setup</title>
+    <title>USPSA Stage Setup (v1.1)</title>
     <link rel="stylesheet" href="./styles.css" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
     />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   </head>
   <body>
     <h1 class="light-text">USPSA Stage Setup</h1>
@@ -25,7 +26,7 @@
         <button class="remove" onclick="removePaperTarget()">
           Remove Paper Target
         </button>
-        <p>Paper Targets: <span id="paperCount">6</span></p>
+        <p>Paper Targets: <span id="paperCount">0</span></p>
       </div>
 
       <div>
@@ -108,6 +109,19 @@
         />
         <button class="plus" id="mikePlus">+</button>
       </div>
+      <div class="scorable-menu">
+        <div class="aNote">
+          <span>N</span>
+        </div>
+        <button class="minus" id="noshootMinus">-</button>
+        <input
+          class="scores"
+          type="number"
+          id="noshootHits"
+          placeholder="Noshoot Hits"
+        />
+        <button class="plus" id="noshootPlus">+</button>
+      </div>
 
       <div class="scorable-menu">
         <div class="aNote">
@@ -127,11 +141,12 @@
     <!-- Centering the score history and table -->
     <div class="score-history-container">
       <h3 class="light-text">Score History</h3>
+      <button id="downloadPDF" class="action-button">Download PDF</button>
       <table id="scoreTable">
         <thead>
           <tr>
-            <th>Shooter Name</th>
-            <th>Time (seconds)</th>
+            <th>Name</th>
+            <th>Time</th>
             <th>HF</th>
             <th>Show Stats</th>
             <th>Delete Entry</th>

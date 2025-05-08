@@ -234,3 +234,17 @@ input:focus {
 .delete-button:hover {
   color: #c0392b;
 }
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+.stage-setup,
+.score-info,
+.score-history-container {
+  width: 100%;
+  max-width: 500px; /* or 800px for score-history-container */
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
