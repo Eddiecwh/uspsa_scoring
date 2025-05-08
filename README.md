@@ -1,6 +1,7 @@
 ﻿# uspsa_scoring - Eddie Chan - 5/8/2025
 
 Patch Notes 
+
 v1.2
 - Now supports local session storage. Refreshing page will no longer cause you to lose data. Local caching will house all information in
   the tables. Removing items will also remove them from the local cache.
