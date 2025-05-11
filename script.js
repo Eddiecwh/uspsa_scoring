@@ -434,4 +434,42 @@ function showStats(button) {
   );
 }
 
+let sortDirection = {
+  1: "asc", // Time
+  2: "asc", // HF
+};
+
+function sortTable(colIndex) {
+  const table = document.getElementById("scoreTable");
+  const tbody = table.tBodies[0];
+  const rows = Array.from(tbody.querySelectorAll("tr"));
+
+  // Determine sort direction
+  const direction = sortDirection[colIndex] === "asc" ? 1 : -1;
+
+  // Sort the rows
+  rows.sort((a, b) => {
+    const aValue = parseFloat(a.cells[colIndex].textContent) || 0;
+    const bValue = parseFloat(b.cells[colIndex].textContent) || 0;
+    return direction * (aValue - bValue);
+  });
+
+  // Replace rows
+  tbody.replaceChildren(...rows);
+
+  // Toggle the direction
+  sortDirection[colIndex] = sortDirection[colIndex] === "asc" ? "desc" : "asc";
+
+  // Update arrows for all sortable columns
+  updateSortArrows();
+}
+
+function updateSortArrows() {
+  const timeArrow = document.getElementById("timeArrow");
+  const hfArrow = document.getElementById("hfArrow");
+
+  timeArrow.textContent = sortDirection[1] === "asc" ? "▲" : "▼";
+  hfArrow.textContent = sortDirection[2] === "asc" ? "▲" : "▼";
+}
+
 window.addEventListener("DOMContentLoaded", loadTableFromLocalStorage);
