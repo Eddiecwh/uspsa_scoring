@@ -149,17 +149,41 @@ function setupScoringScreen() {
     const steelBtn = document.createElement("div");
     steelBtn.className = "steel-btn";
     steelBtn.textContent = `S${i + 1}`;
-    steelBtn.onclick = () => toggleSteel(i);
+
+    let touchStartTime = 0;
+    let touchMoved = false;
+
+    steelBtn.addEventListener("touchstart", (e) => {
+      touchStartTime = Date.now();
+      touchMoved = false;
+      handleLongPressStart(e, () => resetSteel(i));
+    });
+
+    steelBtn.addEventListener("touchmove", (e) => {
+      touchMoved = true;
+    });
+
+    steelBtn.addEventListener("touchend", (e) => {
+      e.preventDefault();
+      handleLongPressEnd(e);
+
+      if (!touchMoved && !isLongPress) {
+        toggleSteel(i);
+      }
+    });
+
+    steelBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (!isLongPress) {
+        toggleSteel(i);
+      }
+    });
 
     steelBtn.addEventListener("mousedown", (e) =>
       handleLongPressStart(e, () => resetSteel(i))
     );
-    steelBtn.addEventListener("touchstart", (e) =>
-      handleLongPressStart(e, () => resetSteel(i))
-    );
     steelBtn.addEventListener("mouseup", handleLongPressEnd);
     steelBtn.addEventListener("mouseleave", handleLongPressEnd);
-    steelBtn.addEventListener("touchend", handleLongPressEnd);
     steelBtn.addEventListener("touchcancel", handleLongPressEnd);
 
     steelGrid.appendChild(steelBtn);
@@ -231,6 +255,28 @@ function setupScoringScreen() {
       const targetIndex = parseInt(button.dataset.target);
       const scoreType = button.dataset.score;
 
+      let touchStartTime = 0;
+      let touchMoved = false;
+
+      button.addEventListener("touchstart", (e) => {
+        touchStartTime = Date.now();
+        touchMoved = false;
+        handleLongPressStart(e, () => resetScoreButton(targetIndex, scoreType));
+      });
+
+      button.addEventListener("touchmove", (e) => {
+        touchMoved = true;
+      });
+
+      button.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        handleLongPressEnd(e);
+
+        if (!touchMoved && !isLongPress) {
+          selectScore(targetIndex, scoreType);
+        }
+      });
+
       button.addEventListener("click", (e) => {
         e.preventDefault();
         if (!isLongPress) {
@@ -241,12 +287,8 @@ function setupScoringScreen() {
       button.addEventListener("mousedown", (e) =>
         handleLongPressStart(e, () => resetScoreButton(targetIndex, scoreType))
       );
-      button.addEventListener("touchstart", (e) =>
-        handleLongPressStart(e, () => resetScoreButton(targetIndex, scoreType))
-      );
       button.addEventListener("mouseup", handleLongPressEnd);
       button.addEventListener("mouseleave", handleLongPressEnd);
-      button.addEventListener("touchend", handleLongPressEnd);
       button.addEventListener("touchcancel", handleLongPressEnd);
     });
   }
@@ -276,7 +318,7 @@ function handleLongPressEnd(event) {
 
   setTimeout(() => {
     isLongPress = false;
-  }, 50);
+  }, 100);
 }
 
 function resetScoreButton(targetIndex, scoreType) {
