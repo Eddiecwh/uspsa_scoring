@@ -3,166 +3,282 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>USPSA Stage Setup (v1.1)</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <title>USPSA Scoring App v2.0</title>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
     />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <h1 class="light-text">USPSA Stage Setup (v1.2)</h1>
-    <h2
-      class="light-text"
-      style="font-size: large; margin-top: 0; font-style: italic"
-    >
-      Eddie Chan 2025
-    </h2>
-    <a href="https://github.com/Eddiecwh/uspsa_scoring">Patch Notes</a>
-    <br />
-    <div class="stage-setup">
-      <h2 class="light-text">Stage Settings</h2>
-      <div>
-        <button class="add" onclick="addPaperTarget()">Add Paper Target</button>
-        <button class="remove" onclick="removePaperTarget()">
-          Remove Paper Target
-        </button>
-        <p>Paper Targets: <span id="paperCount">0</span></p>
+    <div class="container">
+      <div class="header">
+        <h1><i class="fas fa-bullseye"></i> USPSA Scoring</h1>
+        <p>HF Scoring System v2.0 - Eddie C. 8/15/25</p>
       </div>
 
-      <div>
-        <button class="add" onclick="addSteelTarget()">Add Steel Target</button>
-        <button class="remove" onclick="removeSteelTarget()">
-          Remove Steel Target
-        </button>
-        <p>Steel Targets: <span id="steelCount">0</span></p>
-      </div>
-
-      <!-- <div>
-        <button onclick="toggleMajor()">Toggle Major Scoring</button>
-        <p>Major Scoring: <span id="majorStatus">True</span></p>
-      </div> -->
-
-      <p id="totalPointsDisplay">
-        Total Points: <span id="totalPoints">0</span>
-      </p>
-    </div>
-
-    <div class="score-info">
-      <h2>Enter Score Information</h2>
-      <input type="text" id="shooterName" placeholder="Shooter's Name" />
-      <input type="number" id="totalTime" placeholder="Total Time" />
-
-      <br />
-      <br />
-
-      <div class="scorable-menu">
-        <div class="aNote">
-          <span>A</span>
+      <!-- Main Dashboard -->
+      <div class="screen active" id="dashboard">
+        <h2>Dashboard</h2>
+        <div class="menu-grid">
+          <div class="menu-card" onclick="showScreen('stage-setup')">
+            <i class="fas fa-plus-circle"></i>
+            <h3>New Stage</h3>
+            <p>Create and configure a new stage</p>
+          </div>
+          <div class="menu-card" onclick="showScreen('stage-library')">
+            <i class="fas fa-folder"></i>
+            <h3>Stage Library</h3>
+            <p>Manage saved stages</p>
+          </div>
+          <div class="menu-card" onclick="quickScore()">
+            <i class="fas fa-stopwatch"></i>
+            <h3>Quick Score</h3>
+            <p>Score with default stage</p>
+          </div>
+          <div class="menu-card" onclick="showScreen('results')">
+            <i class="fas fa-chart-bar"></i>
+            <h3>Results</h3>
+            <p>View scores and analytics</p>
+          </div>
         </div>
-        <button class="minus" id="alphaMinus">-</button>
-        <input
-          class="scores"
-          type="number"
-          id="alphaHits"
-          placeholder="Alpha Hits"
-        />
-
-        <button class="plus" id="alphaPlus">+</button>
       </div>
-      <div class="scorable-menu">
-        <div class="aNote">
-          <span>C</span>
+
+      <!-- Stage Setup -->
+      <div class="screen" id="stage-setup">
+        <div class="breadcrumb">
+          <a href="#" onclick="showScreen('dashboard')">Dashboard</a> / Stage
+          Setup
         </div>
-        <button class="minus" id="charlieMinus">-</button>
-        <input
-          class="scores"
-          type="number"
-          id="charlieHits"
-          placeholder="Charlie Hits"
-        />
+        <h2>Stage Setup</h2>
 
-        <button class="plus" id="charliePlus">+</button>
-      </div>
-      <div class="scorable-menu">
-        <div class="aNote">
-          <span>D</span>
+        <div class="stage-setup-grid">
+          <div>
+            <div class="input-group">
+              <label>Stage Name</label>
+              <input
+                type="text"
+                id="stageName"
+                placeholder="Enter stage name"
+              />
+            </div>
+
+            <div class="input-group">
+              <label>Paper Targets</label>
+              <div class="counter">
+                <button
+                  class="counter-btn minus"
+                  onclick="adjustCounter('paperTargets', -1)"
+                >
+                  -
+                </button>
+                <span class="counter-value" id="paperTargets">6</span>
+                <button
+                  class="counter-btn plus"
+                  onclick="adjustCounter('paperTargets', 1)"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label>Steel Targets</label>
+              <div class="counter">
+                <button
+                  class="counter-btn minus"
+                  onclick="adjustCounter('steelTargets', -1)"
+                >
+                  -
+                </button>
+                <span class="counter-value" id="steelTargets">4</span>
+                <button
+                  class="counter-btn plus"
+                  onclick="adjustCounter('steelTargets', 1)"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="input-group">
+              <label>Max Points</label>
+              <input type="number" id="maxPoints" value="90" readonly />
+            </div>
+
+            <div class="input-group">
+              <label>Notes</label>
+              <input
+                type="text"
+                id="stageNotes"
+                placeholder="Stage description..."
+              />
+            </div>
+          </div>
         </div>
-        <button class="minus" id="deltaMinus">-</button>
-        <input
-          class="scores"
-          type="number"
-          id="deltaHits"
-          placeholder="Delta Hits"
-        />
-        <button class="plus" id="deltaPlus">+</button>
-      </div>
-      <div class="scorable-menu">
-        <div class="aNote">
-          <span>M</span>
+
+        <div class="navigation">
+          <button class="btn btn-secondary" onclick="showScreen('dashboard')">
+            <i class="fas fa-arrow-left"></i> Back
+          </button>
+          <button class="btn" onclick="saveStage()">
+            <i class="fas fa-save"></i> Save Stage
+          </button>
+          <button class="btn" onclick="startScoring()">
+            <i class="fas fa-play"></i> Start Scoring
+          </button>
         </div>
-        <button class="minus" id="mikeMinus">-</button>
-        <input
-          class="scores"
-          type="number"
-          id="mikeHits"
-          placeholder="Mike Hits"
-        />
-        <button class="plus" id="mikePlus">+</button>
       </div>
-      <div class="scorable-menu">
-        <div class="aNote">
-          <span>N</span>
+
+      <!-- Stage Library -->
+      <div class="screen" id="stage-library">
+        <div class="breadcrumb">
+          <a href="#" onclick="showScreen('dashboard')">Dashboard</a> / Stage
+          Library
         </div>
-        <button class="minus" id="noshootMinus">-</button>
-        <input
-          class="scores"
-          type="number"
-          id="noshootHits"
-          placeholder="Noshoot Hits"
-        />
-        <button class="plus" id="noshootPlus">+</button>
-      </div>
+        <h2>Stage Library</h2>
 
-      <div class="scorable-menu">
-        <div class="aNote">
-          <span>S</span>
+        <div class="stage-list" id="stageList">
+          <!-- Stages will be populated here -->
         </div>
-        <button class="minus" id="steelMinus">-</button>
-        <input type="number" id="steelHits" placeholder="Steel Hits" />
-        <button class="plus" id="steelPlus">+</button>
+
+        <div class="navigation">
+          <button class="btn btn-secondary" onclick="showScreen('dashboard')">
+            <i class="fas fa-arrow-left"></i> Back
+          </button>
+          <button class="btn" onclick="showScreen('stage-setup')">
+            <i class="fas fa-plus"></i> New Stage
+          </button>
+        </div>
       </div>
 
-      <br />
+      <!-- Scoring Screen -->
+      <div class="screen" id="scoring">
+        <div class="breadcrumb">
+          <a href="#" onclick="showScreen('dashboard')">Dashboard</a> /
+          <a href="#" onclick="showScreen('stage-library')">Stages</a> / Scoring
+        </div>
+        <h2 id="currentStageName">Stage Name</h2>
 
-      <button onclick="clearScores()">Clear</button>
-      <button onclick="calculateScore()">Calculate Score</button>
-    </div>
+        <div class="input-group">
+          <label>Shooter Name</label>
+          <input
+            type="text"
+            id="shooterName"
+            placeholder="Enter shooter name"
+          />
+        </div>
 
-    <!-- Centering the score history and table -->
-    <div class="score-history-container">
-      <h3 class="light-text">Score History</h3>
-      <button id="downloadPDF" class="action-button">Download PDF</button>
-      <table id="scoreTable">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th onclick="sortTable(1)">Time <span id="timeArrow">▲</span></th>
-            <th onclick="sortTable(2)">HF <span id="hfArrow">▲</span></th>
-            <th>Show Stats</th>
-            <th>Delete Entry</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Score rows will be appended here -->
-        </tbody>
-      </table>
+        <div class="input-group">
+          <label>Time (seconds)</label>
+          <input
+            type="number"
+            id="shooterTime"
+            placeholder="Enter time in seconds"
+            step="0.01"
+            min="0"
+          />
+        </div>
+
+        <div class="steel-section">
+          <h3><i class="fas fa-circle"></i> Steel Targets</h3>
+          <div class="steel-grid" id="steelGrid">
+            <!-- Steel targets will be populated here -->
+          </div>
+        </div>
+
+        <div class="target-grid" id="targetGrid">
+          <!-- Paper targets will be populated here -->
+        </div>
+
+        <div class="results-summary" id="resultsPreview" style="display: none">
+          <h3>Score Preview</h3>
+          <div class="hit-factor" id="hitFactorPreview">0.00</div>
+          <p>
+            Points: <span id="pointsPreview">0</span> | Time:
+            <span id="timePreview">0.00</span>s
+          </p>
+        </div>
+
+        <div class="navigation">
+          <button
+            class="btn btn-secondary"
+            onclick="showScreen('stage-library')"
+          >
+            <i class="fas fa-arrow-left"></i> Back
+          </button>
+          <button class="btn btn-danger" onclick="clearScore()">
+            <i class="fas fa-trash"></i> Clear
+          </button>
+          <button class="btn" onclick="reviewScore()">
+            <i class="fas fa-eye"></i> Review
+          </button>
+        </div>
+      </div>
+
+      <!-- Score Review Screen -->
+      <div class="screen" id="score-review">
+        <div class="breadcrumb">
+          <a href="#" onclick="showScreen('dashboard')">Dashboard</a> /
+          <a href="#" onclick="showScreen('stage-library')">Stages</a> /
+          <a href="#" onclick="showScreen('scoring')">Scoring</a> / Review
+        </div>
+        <h2>Score Review</h2>
+
+        <div class="review-summary">
+          <h3 id="reviewStageName">Stage Name</h3>
+          <h4 id="reviewShooterName">Shooter Name</h4>
+        </div>
+
+        <div class="review-table-container">
+          <table class="review-table">
+            <tbody id="reviewTableBody">
+              <!-- Review data will be populated here -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="navigation">
+          <button class="btn btn-secondary" onclick="showScreen('scoring')">
+            <i class="fas fa-arrow-left"></i> Back to Scoring
+          </button>
+          <button class="btn" onclick="finalSaveScore()">
+            <i class="fas fa-save"></i> Save Score
+          </button>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="screen" id="results">
+        <div class="breadcrumb">
+          <a href="#" onclick="showScreen('dashboard')">Dashboard</a> / Results
+        </div>
+        <h2>Results & Analytics</h2>
+
+        <div class="input-group">
+          <label>Filter by Stage</label>
+          <select id="stageFilter" onchange="loadResults()">
+            <option value="">All Stages</option>
+          </select>
+        </div>
+
+        <div id="resultsContent">
+          <p>No scores recorded yet. Start scoring to see results here!</p>
+        </div>
+
+        <div class="navigation">
+          <button class="btn btn-secondary" onclick="showScreen('dashboard')">
+            <i class="fas fa-arrow-left"></i> Back
+          </button>
+          <button class="btn" onclick="exportResults()">
+            <i class="fas fa-download"></i> Export Results
+          </button>
+        </div>
+      </div>
     </div>
 
     <script src="script.js"></script>
-    <script>
-      loadTableFromLocalStorage();
-    </script>
   </body>
 </html>
