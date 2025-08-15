@@ -1,475 +1,900 @@
-const createButton = (text, onClick) => {
-  const button = document.createElement("button");
-  button.classList.add("action-button");
-  button.textContent = text;
-  button.onclick = onClick;
-  return button;
+let currentStage = null;
+let timerRunning = false;
+let timerStart = 0;
+let timerInterval = null;
+let currentScore = {
+  shooter: "",
+  time: 0,
+  targets: [],
+  steel: [],
 };
+
+let longPressTimer = null;
+let isLongPress = false;
+
+function showScreen(screenId) {
+  document.querySelectorAll(".screen").forEach((screen) => {
+    screen.classList.remove("active");
+  });
+  document.getElementById(screenId).classList.add("active");
+
+  if (screenId === "stage-library") {
+    loadStages();
+  } else if (screenId === "results") {
+    loadResults();
+  }
+}
 
 document.addEventListener("DOMContentLoaded", function () {
-  const stage = {
-    major: false,
-    paperTargets: 0,
-    steelTargets: 0,
-    alpha: 5,
-    charlie: 3,
-    delta: 1,
-    mike: -10,
-    steel: 5,
-    noshoot: -10,
-  };
+  loadStages();
+  updateMaxPoints();
 
-  const updateTotalPoints = () => {
-    const totalPaperPoints = stage.paperTargets * 10;
-    const totalSteelPoints = stage.steelTargets * stage.steel;
-    const totalPoints = totalPaperPoints + totalSteelPoints;
-    document.getElementById("totalPoints").textContent = totalPoints;
-    return totalPoints;
-  };
-
-  const updateTargetCount = (targetType, operation) => {
-    if (targetType === "paper") {
-      stage.paperTargets += operation;
-      document.getElementById("paperCount").textContent = stage.paperTargets;
-    } else if (targetType === "steel") {
-      stage.steelTargets += operation;
-      document.getElementById("steelCount").textContent = stage.steelTargets;
+  document.addEventListener("input", function (e) {
+    if (e.target.id === "shooterTime") {
+      updateScorePreview();
     }
-    updateTotalPoints();
-  };
-
-  window.addPaperTarget = () => updateTargetCount("paper", 1);
-  window.removePaperTarget = () => updateTargetCount("paper", -1);
-  window.addSteelTarget = () => updateTargetCount("steel", 1);
-  window.removeSteelTarget = () => updateTargetCount("steel", -1);
-
-  const setupIncrementDecrement = (minusBtnId, plusBtnId, inputId) => {
-    const minusBtn = document.getElementById(minusBtnId);
-    const plusBtn = document.getElementById(plusBtnId);
-    const input = document.getElementById(inputId);
-
-    if (!minusBtn || !plusBtn || !input) {
-      console.error(`Element not found:`, { minusBtnId, plusBtnId, inputId });
-      return;
-    }
-
-    input.value = input.value || 0;
-
-    minusBtn.addEventListener("click", () => {
-      input.value = Math.max(0, parseInt(input.value) - 1);
-    });
-
-    plusBtn.addEventListener("click", () => {
-      input.value = parseInt(input.value) + 1;
-    });
-  };
-
-  ["alpha", "charlie", "delta", "mike", "steel", "noshoot"].forEach((hitType) =>
-    setupIncrementDecrement(
-      `${hitType}Minus`,
-      `${hitType}Plus`,
-      `${hitType}Hits`
-    )
-  );
-
-  const addScoreToTable = (shooterName, totalTime, finalResult) => {
-    const savedData = JSON.parse(localStorage.getItem("scoreHistory") || "[]");
-
-    // Create a unique ID for each entry using the current timestamp
-    let uniqueID = Date.now();
-
-    const tableBody = document
-      .getElementById("scoreTable")
-      .getElementsByTagName("tbody")[0];
-    const newRow = tableBody.insertRow();
-
-    const nameCell = newRow.insertCell(0); // Shooter Name
-    const timeCell = newRow.insertCell(1); // Time (seconds)
-    const finalResultCell = newRow.insertCell(2); // Final Result
-    const statsCell = newRow.insertCell(3); // Show Stats
-    const deleteCell = newRow.insertCell(4); // Delete button
-
-    // Set additional attributes like hits
-    newRow.setAttribute("data-id", uniqueID); // Set unique ID here
-    newRow.setAttribute(
-      "data-alpha",
-      document.getElementById("alphaHits").value || 0
-    );
-    newRow.setAttribute(
-      "data-charlie",
-      document.getElementById("charlieHits").value || 0
-    );
-    newRow.setAttribute(
-      "data-delta",
-      document.getElementById("deltaHits").value || 0
-    );
-    newRow.setAttribute(
-      "data-mike",
-      document.getElementById("mikeHits").value || 0
-    );
-    newRow.setAttribute(
-      "data-steel",
-      document.getElementById("steelHits").value || 0
-    );
-    newRow.setAttribute(
-      "data-noshoot",
-      document.getElementById("noshootHits").value || 0
-    );
-
-    // Create the "Show Stats" button
-    const statsButton = createButton("Show Stats", function () {
-      alert(
-        `Alpha: ${newRow.getAttribute(
-          "data-alpha"
-        )}, Charlie: ${newRow.getAttribute(
-          "data-charlie"
-        )}, Delta: ${newRow.getAttribute(
-          "data-delta"
-        )}, Mike: ${newRow.getAttribute(
-          "data-mike"
-        )}, Steel: ${newRow.getAttribute(
-          "data-steel"
-        )}, Noshoot: ${newRow.getAttribute("data-noshoot")}`
-      );
-    });
-    statsCell.appendChild(statsButton);
-
-    // Create the "Delete" button
-    const deleteButton = createButton("🗑️ Delete", function () {
-      deleteEntry(this);
-    });
-    deleteCell.appendChild(deleteButton);
-
-    // Set the cells with shooter information
-    nameCell.textContent = shooterName;
-    timeCell.textContent = totalTime;
-    finalResultCell.textContent = finalResult.toFixed(2);
-
-    // Save this new entry to localStorage with the unique ID
-    const newEntry = {
-      id: uniqueID, // Include unique ID in the saved entry
-      name: shooterName,
-      time: totalTime,
-      hf: finalResult.toFixed(2),
-      alpha: newRow.getAttribute("data-alpha"),
-      charlie: newRow.getAttribute("data-charlie"),
-      delta: newRow.getAttribute("data-delta"),
-      steel: newRow.getAttribute("data-steel"),
-      mike: newRow.getAttribute("data-mike"),
-      noshoot: newRow.getAttribute("data-noshoot"),
-    };
-
-    savedData.push(newEntry);
-    localStorage.setItem("scoreHistory", JSON.stringify(savedData));
-  };
-
-  window.calculateScore = () => {
-    const alphaHits = parseInt(document.getElementById("alphaHits").value) || 0;
-    const charlieHits =
-      parseInt(document.getElementById("charlieHits").value) || 0;
-    const deltaHits = parseInt(document.getElementById("deltaHits").value) || 0;
-    const mikeHits = parseInt(document.getElementById("mikeHits").value) || 0;
-    const steelHits = parseInt(document.getElementById("steelHits").value) || 0;
-    const noshootHits =
-      parseInt(document.getElementById("noshootHits").value) || 0;
-    const totalTime =
-      parseFloat(document.getElementById("totalTime").value) || 0;
-
-    const maxPaperHits = stage.paperTargets * 2;
-    const totalPaperHits = alphaHits + charlieHits + deltaHits;
-    if (totalPaperHits > maxPaperHits) {
-      alert(
-        `Total paper hits (Alpha + Charlie + Delta) cannot exceed ${maxPaperHits}.`
-      );
-      return;
-    }
-
-    const maxSteelHits = stage.steelTargets;
-    if (steelHits > maxSteelHits) {
-      alert(`Total steel hits cannot exceed ${maxSteelHits}.`);
-      return;
-    }
-
-    const paperScore =
-      alphaHits * stage.alpha +
-      charlieHits * stage.charlie +
-      deltaHits * stage.delta +
-      mikeHits * stage.mike +
-      noshootHits * stage.noshoot;
-    const steelScore = steelHits * stage.steel;
-    const totalScore = paperScore + steelScore;
-    const finalResult = totalScore / totalTime;
-
-    console.log("totalTime: " + totalTime);
-
-    const shooterName =
-      document.getElementById("shooterName").value || "Unknown Shooter";
-    addScoreToTable(shooterName, totalTime, finalResult);
-
-    saveTableToLocalStorage();
-  };
-
-  updateTotalPoints();
+  });
 });
 
-window.clearScores = function () {
-  const inputFields = document.querySelectorAll("input[type='number']");
-  inputFields.forEach((input) => (input.value = 0));
-
-  document.getElementById("shooterName").value = "";
-};
-
-function addRow(
-  shooterName,
-  time,
-  alpha,
-  charlie,
-  delta,
-  mike,
-  steel,
-  noshoot,
-  hf
-) {
-  const table = document
-    .getElementById("scoreTable")
-    .getElementsByTagName("tbody")[0];
-
-  const newRow = table.insertRow();
-  const uniqueID = Date.now(); // Generate a unique ID for this row
-  newRow.setAttribute("data-id", uniqueID); // Assign the unique ID to the row
-  newRow.setAttribute("data-alpha", alpha);
-  newRow.setAttribute("data-charlie", charlie);
-  newRow.setAttribute("data-delta", delta);
-  newRow.setAttribute("data-mike", mike);
-  newRow.setAttribute("data-steel", steel);
-  newRow.setAttribute("data-noshoot", noshoot);
-
-  const shooterNameCell = newRow.insertCell(0);
-  shooterNameCell.textContent = shooterName;
-
-  const timeCell = newRow.insertCell(1);
-  timeCell.textContent = time;
-
-  const hfCell = newRow.insertCell(2);
-  hfCell.textContent = hf;
-
-  const statsCell = newRow.insertCell(3);
-  const statsButton = createButton("Show Stats", function () {
-    alert(
-      `Alpha: ${alpha}, Charlie: ${charlie}, Delta: ${delta}, Mike: ${mike}, Steel: ${steel}, Noshoot: ${noshoot}`
-    );
-  });
-  statsCell.appendChild(statsButton);
-
-  const deleteCell = newRow.insertCell(4);
-  const deleteButton = createButton("Delete", function () {
-    deleteEntry(this);
-  });
-  deleteCell.appendChild(deleteButton);
-
-  saveTableToLocalStorage();
+function adjustCounter(counterId, delta) {
+  const element = document.getElementById(counterId);
+  let value = parseInt(element.textContent) + delta;
+  value = Math.max(0, value);
+  element.textContent = value;
+  updateMaxPoints();
 }
 
-function generatePDF() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-
-  const table = document.getElementById("scoreTable");
-  const rows = table.getElementsByTagName("tr");
-
-  doc.setFontSize(10);
-
-  doc.setFont("Arial", "bold");
-  doc.text(
-    "USPSA HF Stage Score(s) - " + new Date(Date.now()).toString(),
-    14,
-    20
+function updateMaxPoints() {
+  const paperTargets = parseInt(
+    document.getElementById("paperTargets").textContent
   );
-  doc.setFont("Arial", "normal");
+  const steelTargets = parseInt(
+    document.getElementById("steelTargets").textContent
+  );
+  const maxPoints = paperTargets * 10 + steelTargets * 5;
+  document.getElementById("maxPoints").value = maxPoints;
+}
 
-  const headers = [
-    "Name",
-    "Time",
-    "HF",
-    "Alpha",
-    "Charlie",
-    "Delta",
-    "Steel",
-    "Mikes",
-    "Noshoots",
-  ];
-  let yPos = 30;
-  const cellWidth = 20;
+function saveStage() {
+  const stage = {
+    id: Date.now(),
+    name: document.getElementById("stageName").value || "Unnamed Stage",
+    paperTargets: parseInt(document.getElementById("paperTargets").textContent),
+    steelTargets: parseInt(document.getElementById("steelTargets").textContent),
+    notes: document.getElementById("stageNotes").value,
+    maxPoints: parseInt(document.getElementById("maxPoints").value),
+    created: new Date().toLocaleDateString(),
+  };
 
-  doc.setFont("Arial", "bold");
-  headers.forEach((header, index) => {
-    const xPos =
-      14 + index * cellWidth + cellWidth / 2 - doc.getTextWidth(header) / 2;
-    doc.text(header, xPos - 1, yPos - 0.5);
-    doc.rect(14 + index * cellWidth - 1, yPos - 5, cellWidth, 6);
-  });
-  doc.setFont("Arial", "normal");
+  let stages = JSON.parse(localStorage.getItem("uspsa_stages") || "[]");
+  stages.push(stage);
+  localStorage.setItem("uspsa_stages", JSON.stringify(stages));
 
-  yPos += 6;
+  alert("Stage saved successfully!");
+  loadStages();
+}
 
-  for (let i = 1; i < rows.length; i++) {
-    const cells = rows[i].getElementsByTagName("td");
-    let rowData = [];
+function loadStages() {
+  const stages = JSON.parse(localStorage.getItem("uspsa_stages") || "[]");
+  const stageList = document.getElementById("stageList");
 
-    rowData.push(cells[0].innerText); // Shooter Name
-    rowData.push(cells[1].innerText); // Time (seconds)
-    rowData.push(cells[2].innerText); // HF
-    rowData.push(rows[i].getAttribute("data-alpha")); // Alpha
-    rowData.push(rows[i].getAttribute("data-charlie")); // Charlie
-    rowData.push(rows[i].getAttribute("data-delta")); // Delta
-    rowData.push(rows[i].getAttribute("data-steel")); // Steel
-    rowData.push(rows[i].getAttribute("data-mike")); // Mikes
-    rowData.push(rows[i].getAttribute("data-noshoot")); // Noshoots
-
-    rowData.forEach((text, index) => {
-      const xPos =
-        14 + index * cellWidth + cellWidth / 2 - doc.getTextWidth(text) / 2;
-      doc.text(text, xPos - 1, yPos - 0.5);
-      doc.rect(14 + index * cellWidth - 1, yPos - 5, cellWidth, 6);
-    });
-
-    yPos += 6;
+  if (stages.length === 0) {
+    stageList.innerHTML =
+      "<p>No stages created yet. Create your first stage!</p>";
+    return;
   }
 
-  doc.save("USPSA_Scores" + Date.now() + ".pdf");
+  stageList.innerHTML = stages
+    .map(
+      (stage) => `
+        <div class="stage-item">
+            <div onclick="selectStage(${stage.id})" style="cursor: pointer; flex-grow: 1;">
+                <h4>${stage.name}</h4>
+                <p>${stage.paperTargets} Paper, ${stage.steelTargets} Steel | Max: ${stage.maxPoints} pts</p>
+                <p>Created: ${stage.created}</p>
+            </div>
+            <div class="stage-actions">
+                <button class="btn" style="min-width: auto; padding: 8px 12px; font-size: 0.8rem;" onclick="selectStage(${stage.id})">
+                    <i class="fas fa-play"></i> Score
+                </button>
+                <button class="btn btn-secondary" style="min-width: auto; padding: 8px 12px; font-size: 0.8rem;" onclick="editStage(${stage.id})">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="btn btn-secondary" style="min-width: auto; padding: 8px 12px; font-size: 0.8rem;" onclick="duplicateStage(${stage.id})">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+                <button class="btn btn-danger" style="min-width: auto; padding: 8px 12px; font-size: 0.8rem;" onclick="deleteStage(${stage.id})">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+        </div>
+    `
+    )
+    .join("");
 }
 
-document.getElementById("downloadPDF").addEventListener("click", generatePDF);
+function selectStage(stageId) {
+  const stages = JSON.parse(localStorage.getItem("uspsa_stages") || "[]");
+  currentStage = stages.find((s) => s.id === stageId);
 
-function saveTableToLocalStorage() {
-  const table = document.getElementById("scoreTable");
-  const rows = table.querySelectorAll("tbody tr");
-  const data = [];
+  if (currentStage) {
+    setupScoringScreen();
+    showScreen("scoring");
+  }
+}
 
-  rows.forEach((row) => {
-    data.push({
-      id: row.getAttribute("data-id"),
-      name: row.cells[0].innerText,
-      time: row.cells[1].innerText,
-      hf: row.cells[2].innerText,
-      alpha: row.getAttribute("data-alpha"),
-      charlie: row.getAttribute("data-charlie"),
-      delta: row.getAttribute("data-delta"),
-      steel: row.getAttribute("data-steel"),
-      mike: row.getAttribute("data-mike"),
-      noshoot: row.getAttribute("data-noshoot"),
+function startScoring() {
+  currentStage = {
+    id: "temp",
+    name: document.getElementById("stageName").value || "Unnamed Stage",
+    paperTargets: parseInt(document.getElementById("paperTargets").textContent),
+    steelTargets: parseInt(document.getElementById("steelTargets").textContent),
+    maxPoints: parseInt(document.getElementById("maxPoints").value),
+  };
+
+  setupScoringScreen();
+  showScreen("scoring");
+}
+
+function setupScoringScreen() {
+  if (!currentStage) return;
+
+  document.getElementById("currentStageName").textContent = currentStage.name;
+
+  const steelGrid = document.getElementById("steelGrid");
+  steelGrid.innerHTML = "";
+  currentScore.steel = [];
+
+  for (let i = 0; i < currentStage.steelTargets; i++) {
+    const steelBtn = document.createElement("div");
+    steelBtn.className = "steel-btn";
+    steelBtn.textContent = `S${i + 1}`;
+    steelBtn.onclick = () => toggleSteel(i);
+
+    steelBtn.addEventListener("mousedown", (e) =>
+      handleLongPressStart(e, () => resetSteel(i))
+    );
+    steelBtn.addEventListener("touchstart", (e) =>
+      handleLongPressStart(e, () => resetSteel(i))
+    );
+    steelBtn.addEventListener("mouseup", handleLongPressEnd);
+    steelBtn.addEventListener("mouseleave", handleLongPressEnd);
+    steelBtn.addEventListener("touchend", handleLongPressEnd);
+    steelBtn.addEventListener("touchcancel", handleLongPressEnd);
+
+    steelGrid.appendChild(steelBtn);
+    currentScore.steel.push(false);
+  }
+
+  const targetGrid = document.getElementById("targetGrid");
+  targetGrid.innerHTML = "";
+  currentScore.targets = [];
+
+  for (let i = 0; i < currentStage.paperTargets; i++) {
+    const targetRow = document.createElement("div");
+    targetRow.className = "target-row";
+    targetRow.innerHTML = `
+            <div class="target-header">
+                <span class="target-title">Target ${i + 1}</span>
+            </div>
+            <div class="scoring-buttons">
+                <div class="score-column">
+                    <button class="score-btn alpha" data-target="${i}" data-score="alpha">
+                        <span class="score-label">A</span>
+                        <span class="score-count" id="alpha-${i}">0</span>
+                    </button>
+                </div>
+                <div class="score-column">
+                    <button class="score-btn charlie" data-target="${i}" data-score="charlie">
+                        <span class="score-label">C</span>
+                        <span class="score-count" id="charlie-${i}">0</span>
+                    </button>
+                </div>
+                <div class="score-column">
+                    <button class="score-btn delta" data-target="${i}" data-score="delta">
+                        <span class="score-label">D</span>
+                        <span class="score-count" id="delta-${i}">0</span>
+                    </button>
+                </div>
+                <div class="score-column">
+                    <button class="score-btn mike" data-target="${i}" data-score="mike">
+                        <span class="score-label">M</span>
+                        <span class="score-count" id="mike-${i}">0</span>
+                    </button>
+                </div>
+                <div class="score-column">
+                    <button class="score-btn noshoot" data-target="${i}" data-score="noshoot">
+                        <span class="score-label">NS</span>
+                        <span class="score-count" id="noshoot-${i}">0</span>
+                    </button>
+                </div>
+                <div class="score-column">
+                    <button class="score-btn npm" data-target="${i}" data-score="npm">
+                        <span class="score-label">NPM</span>
+                        <span class="score-count" id="npm-${i}">0</span>
+                    </button>
+                </div>
+            </div>
+        `;
+    targetGrid.appendChild(targetRow);
+    currentScore.targets.push({
+      alpha: 0,
+      charlie: 0,
+      delta: 0,
+      mike: 0,
+      noshoot: 0,
+      npm: 0,
+    });
+
+    const scoreButtons = targetRow.querySelectorAll(".score-btn");
+    scoreButtons.forEach((button) => {
+      const targetIndex = parseInt(button.dataset.target);
+      const scoreType = button.dataset.score;
+
+      button.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (!isLongPress) {
+          selectScore(targetIndex, scoreType);
+        }
+      });
+
+      button.addEventListener("mousedown", (e) =>
+        handleLongPressStart(e, () => resetScoreButton(targetIndex, scoreType))
+      );
+      button.addEventListener("touchstart", (e) =>
+        handleLongPressStart(e, () => resetScoreButton(targetIndex, scoreType))
+      );
+      button.addEventListener("mouseup", handleLongPressEnd);
+      button.addEventListener("mouseleave", handleLongPressEnd);
+      button.addEventListener("touchend", handleLongPressEnd);
+      button.addEventListener("touchcancel", handleLongPressEnd);
+    });
+  }
+
+  resetAllScores();
+}
+
+function handleLongPressStart(event, callback) {
+  event.preventDefault();
+  isLongPress = false;
+
+  longPressTimer = setTimeout(() => {
+    isLongPress = true;
+    callback();
+    event.target.style.transform = "scale(0.9)";
+    setTimeout(() => {
+      event.target.style.transform = "";
+    }, 200);
+  }, 500);
+}
+
+function handleLongPressEnd(event) {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+
+  setTimeout(() => {
+    isLongPress = false;
+  }, 50);
+}
+
+function resetScoreButton(targetIndex, scoreType) {
+  const target = currentScore.targets[targetIndex];
+  target[scoreType] = 0;
+
+  const countElement = document.getElementById(`${scoreType}-${targetIndex}`);
+  const buttonElement = countElement.closest(".score-btn");
+
+  countElement.textContent = "0";
+  buttonElement.classList.remove(
+    "hit",
+    "penalty",
+    "score-btn-hit",
+    "minus-score-btn-hit"
+  );
+
+  updateScorePreview();
+}
+
+function resetSteel(index) {
+  currentScore.steel[index] = false;
+  const steelBtn = document.querySelectorAll(".steel-btn")[index];
+  steelBtn.classList.remove("hit");
+  updateScorePreview();
+}
+
+function selectScore(targetIndex, scoreType) {
+  const target = currentScore.targets[targetIndex];
+  const countElement = document.getElementById(`${scoreType}-${targetIndex}`);
+  const buttonElement = countElement.closest(".score-btn");
+
+  if (target[scoreType] < 2) {
+    target[scoreType]++;
+
+    if (
+      scoreType === "alpha" ||
+      scoreType === "charlie" ||
+      scoreType === "delta"
+    ) {
+      buttonElement.classList.add("score-btn-hit");
+      buttonElement.classList.remove("minus-score-btn-hit");
+    } else {
+      buttonElement.classList.add("minus-score-btn-hit");
+      buttonElement.classList.remove("score-btn-hit");
+    }
+  } else {
+    target[scoreType] = 0;
+
+    buttonElement.classList.remove("score-btn-hit");
+    buttonElement.classList.remove("minus-score-btn-hit");
+  }
+
+  const { bestHits, totalHits } = calculateBestHits(target);
+
+  const scoringHits =
+    target.alpha + target.charlie + target.delta + target.mike;
+  if (
+    scoringHits > 2 &&
+    ["alpha", "charlie", "delta", "mike"].includes(scoreType)
+  ) {
+    target[scoreType]--;
+    alert("Maximum 2 scoring hits per target (A, C, D, M)!");
+    return;
+  }
+
+  countElement.textContent = target[scoreType];
+
+  updateScorePreview();
+}
+
+function calculateBestHits(target) {
+  const scoringHits = [];
+  for (let i = 0; i < target.alpha; i++)
+    scoringHits.push({ type: "alpha", value: 5 });
+  for (let i = 0; i < target.charlie; i++)
+    scoringHits.push({ type: "charlie", value: 3 });
+  for (let i = 0; i < target.delta; i++)
+    scoringHits.push({ type: "delta", value: 1 });
+
+  scoringHits.sort((a, b) => b.value - a.value);
+
+  const bestScoringHits = scoringHits.slice(0, 2);
+
+  const penalties = [];
+
+  const totalMikes = target.mike;
+  const totalNoShoots = target.noshoot;
+  const totalNPMs = target.npm;
+
+  const effectiveNoShoots = Math.min(totalNoShoots, 2 - bestScoringHits.length);
+  const effectiveMikes = Math.min(
+    totalMikes,
+    Math.max(0, 2 - bestScoringHits.length - effectiveNoShoots)
+  );
+
+  for (let i = 0; i < effectiveNoShoots; i++)
+    penalties.push({ type: "noshoot", value: -10 });
+  for (let i = 0; i < effectiveMikes; i++)
+    penalties.push({ type: "mike", value: -10 });
+
+  for (let i = 0; i < totalNPMs; i++) penalties.push({ type: "npm", value: 0 });
+
+  return {
+    bestHits: [...bestScoringHits, ...penalties],
+    totalHits: scoringHits.length + totalMikes + totalNoShoots + totalNPMs,
+  };
+}
+
+function updateButtonStyling(buttonElement, count, scoreType) {
+  buttonElement.classList.remove("hit", "penalty");
+
+  if (count > 0) {
+    if (["alpha", "charlie", "delta"].includes(scoreType)) {
+      buttonElement.classList.add("hit");
+    } else if (["mike", "noshoot", "npm"].includes(scoreType)) {
+      buttonElement.classList.add("penalty");
+    }
+  }
+}
+
+function toggleSteel(index) {
+  currentScore.steel[index] = !currentScore.steel[index];
+  const steelBtn = document.querySelectorAll(".steel-btn")[index];
+  steelBtn.classList.toggle("hit");
+  updateScorePreview();
+}
+
+function updateScorePreview() {
+  let totalPoints = 0;
+
+  currentScore.targets.forEach((target) => {
+    const { bestHits } = calculateBestHits(target);
+    bestHits.forEach((hit) => {
+      totalPoints += hit.value;
     });
   });
 
-  localStorage.setItem("scoreHistory", JSON.stringify(data));
-}
-
-function loadTableFromLocalStorage() {
-  const savedData = JSON.parse(localStorage.getItem("scoreHistory") || "[]");
-
-  const tableBody = document.querySelector("#scoreTable tbody");
-  tableBody.innerHTML = "";
-
-  savedData.forEach((entry) => {
-    const newRow = document.createElement("tr");
-
-    newRow.setAttribute("data-id", entry.id);
-    newRow.setAttribute("data-alpha", entry.alpha);
-    newRow.setAttribute("data-charlie", entry.charlie);
-    newRow.setAttribute("data-delta", entry.delta);
-    newRow.setAttribute("data-steel", entry.steel);
-    newRow.setAttribute("data-mike", entry.mike);
-    newRow.setAttribute("data-noshoot", entry.noshoot);
-
-    const nameCell = newRow.insertCell(0);
-    nameCell.textContent = entry.name;
-
-    const timeCell = newRow.insertCell(1);
-    timeCell.textContent = entry.time;
-
-    const hfCell = newRow.insertCell(2);
-    hfCell.textContent = entry.hf;
-
-    const statsCell = newRow.insertCell(3);
-    statsCell.appendChild(
-      createButton("Show", function () {
-        showStats(this);
-      })
-    );
-
-    const deleteCell = newRow.insertCell(4);
-    deleteCell.appendChild(
-      createButton("Delete", function () {
-        deleteEntry(this);
-      })
-    );
-
-    tableBody.appendChild(newRow);
-  });
-}
-
-function deleteEntry(button) {
-  const row = button.closest("tr");
-  const rowId = row.getAttribute("data-id");
-
-  row.remove();
-
-  const savedData = JSON.parse(localStorage.getItem("scoreHistory") || "[]");
-  const updatedData = savedData.filter(
-    (entry) => entry.id.toString() !== rowId
-  );
-  localStorage.setItem("scoreHistory", JSON.stringify(updatedData));
-}
-
-function showStats(button) {
-  const row = button.closest("tr");
-  alert(
-    `Alpha: ${row.getAttribute("data-alpha")}, Charlie: ${row.getAttribute(
-      "data-charlie"
-    )}, Delta: ${row.getAttribute("data-delta")}, Mike: ${row.getAttribute(
-      "data-mike"
-    )}, Steel: ${row.getAttribute("data-steel")}, Noshoot: ${row.getAttribute(
-      "data-noshoot"
-    )}`
-  );
-}
-
-let sortDirection = {
-  1: "asc", // Time
-  2: "asc", // HF
-};
-
-function sortTable(colIndex) {
-  const table = document.getElementById("scoreTable");
-  const tbody = table.tBodies[0];
-  const rows = Array.from(tbody.querySelectorAll("tr"));
-
-  // Determine sort direction
-  const direction = sortDirection[colIndex] === "asc" ? 1 : -1;
-
-  // Sort the rows
-  rows.sort((a, b) => {
-    const aValue = parseFloat(a.cells[colIndex].textContent) || 0;
-    const bValue = parseFloat(b.cells[colIndex].textContent) || 0;
-    return direction * (aValue - bValue);
+  currentScore.steel.forEach((hit) => {
+    if (hit) totalPoints += 5;
   });
 
-  // Replace rows
-  tbody.replaceChildren(...rows);
+  const timeInput = document.getElementById("shooterTime");
+  const time = parseFloat(timeInput.value) || 0;
+  currentScore.time = time;
 
-  // Toggle the direction
-  sortDirection[colIndex] = sortDirection[colIndex] === "asc" ? "desc" : "asc";
+  const hitFactor = time > 0 ? totalPoints / time : 0;
 
-  // Update arrows for all sortable columns
-  updateSortArrows();
+  document.getElementById("pointsPreview").textContent = totalPoints;
+  document.getElementById("timePreview").textContent = time.toFixed(2);
+  document.getElementById("hitFactorPreview").textContent =
+    hitFactor.toFixed(4);
+  document.getElementById("resultsPreview").style.display = "block";
 }
 
-function updateSortArrows() {
-  const timeArrow = document.getElementById("timeArrow");
-  const hfArrow = document.getElementById("hfArrow");
+function clearScore() {
+  if (confirm("Clear all scoring data?")) {
+    resetAllScores();
+    document.getElementById("shooterName").value = "";
+    document.getElementById("shooterTime").value = "";
 
-  timeArrow.textContent = sortDirection[1] === "asc" ? "▲" : "▼";
-  hfArrow.textContent = sortDirection[2] === "asc" ? "▲" : "▼";
+    currentScore.targets.forEach((target, targetIndex) => {
+      ["alpha", "charlie", "delta", "mike", "noshoot", "npm"].forEach(
+        (scoreType) => {
+          const countElement = document.getElementById(
+            `${scoreType}-${targetIndex}`
+          );
+          const buttonElement = countElement.closest(".score-btn");
+          countElement.textContent = "0";
+          buttonElement.classList.remove(
+            "hit",
+            "penalty",
+            "score-btn-hit",
+            "minus-score-btn-hit"
+          );
+        }
+      );
+    });
+
+    document.querySelectorAll(".steel-btn.hit").forEach((btn) => {
+      btn.classList.remove("hit");
+    });
+
+    document.getElementById("resultsPreview").style.display = "none";
+  }
 }
 
-window.addEventListener("DOMContentLoaded", loadTableFromLocalStorage);
+function resetAllScores() {
+  currentScore = {
+    shooter: "",
+    time: 0,
+    targets: [],
+    steel: [],
+  };
+
+  for (let i = 0; i < currentStage.paperTargets; i++) {
+    currentScore.targets.push({
+      alpha: 0,
+      charlie: 0,
+      delta: 0,
+      mike: 0,
+      noshoot: 0,
+      npm: 0,
+    });
+  }
+
+  for (let i = 0; i < currentStage.steelTargets; i++) {
+    currentScore.steel.push(false);
+  }
+}
+
+function reviewScore() {
+  const shooterName = document.getElementById("shooterName").value.trim();
+  const timeInput = document.getElementById("shooterTime").value.trim();
+
+  if (!shooterName) {
+    alert("Please enter shooter name");
+    return;
+  }
+
+  if (!timeInput || parseFloat(timeInput) <= 0) {
+    alert("Please enter a valid time");
+    return;
+  }
+
+  let totalAlpha = 0;
+  let totalCharlie = 0;
+  let totalDelta = 0;
+  let totalMike = 0;
+  let totalNoshoot = 0;
+  let totalNpm = 0;
+  let totalPoints = 0;
+
+  currentScore.targets.forEach((target) => {
+    totalAlpha += target.alpha;
+    totalCharlie += target.charlie;
+    totalDelta += target.delta;
+    totalMike += target.mike;
+    totalNoshoot += target.noshoot;
+    totalNpm += target.npm;
+
+    const { bestHits } = calculateBestHits(target);
+    bestHits.forEach((hit) => {
+      totalPoints += hit.value;
+    });
+  });
+
+  currentScore.steel.forEach((hit) => {
+    if (hit) {
+      totalAlpha++;
+      totalPoints += 5;
+    }
+  });
+
+  const time = parseFloat(timeInput);
+  const hitFactor = totalPoints / time;
+
+  document.getElementById("reviewStageName").textContent = currentStage.name;
+  document.getElementById("reviewShooterName").textContent = shooterName;
+
+  const reviewTableBody = document.getElementById("reviewTableBody");
+  reviewTableBody.innerHTML = `
+        <tr>
+            <td>A Hits</td>
+            <td>${totalAlpha}</td>
+        </tr>
+        <tr>
+            <td>C Hits</td>
+            <td>${totalCharlie}</td>
+        </tr>
+        <tr>
+            <td>D Hits</td>
+            <td>${totalDelta}</td>
+        </tr>
+        <tr>
+            <td>M Hits</td>
+            <td>${totalMike}</td>
+        </tr>
+        <tr>
+            <td>NS Hits</td>
+            <td>${totalNoshoot}</td>
+        </tr>
+        <tr>
+            <td>NPM</td>
+            <td>${totalNpm}</td>
+        </tr>
+        <tr>
+            <td>Time</td>
+            <td>${time.toFixed(2)}s</td>
+        </tr>
+        <tr class="total-row">
+            <td>Total Points</td>
+            <td>${totalPoints}</td>
+        </tr>
+        <tr class="hit-factor-row">
+            <td>Hit Factor</td>
+            <td>${hitFactor.toFixed(4)}</td>
+        </tr>
+    `;
+
+  showScreen("score-review");
+}
+
+function finalSaveScore() {
+  const shooterName = document.getElementById("shooterName").value.trim();
+  const timeInput = document.getElementById("shooterTime").value.trim();
+  const time = parseFloat(timeInput);
+
+  currentScore.time = time;
+
+  let totalPoints = 0;
+  let shotsFired = 0;
+
+  currentScore.targets.forEach((target) => {
+    const { bestHits, totalHits } = calculateBestHits(target);
+
+    bestHits.forEach((hit) => {
+      totalPoints += hit.value;
+    });
+
+    shotsFired += totalHits;
+  });
+
+  currentScore.steel.forEach((hit) => {
+    if (hit) {
+      totalPoints += 5;
+      shotsFired++;
+    }
+  });
+
+  const hitFactor = totalPoints / time;
+
+  const scoreRecord = {
+    id: Date.now(),
+    shooter: shooterName,
+    stage: currentStage.name,
+    stageId: currentStage.id,
+    time: time,
+    points: totalPoints,
+    hitFactor: hitFactor,
+    targets: [...currentScore.targets],
+    steel: [...currentScore.steel],
+    shotsFired: shotsFired,
+    date: new Date().toLocaleDateString(),
+    timestamp: new Date().toISOString(),
+  };
+
+  let scores = JSON.parse(localStorage.getItem("uspsa_scores") || "[]");
+  scores.push(scoreRecord);
+  localStorage.setItem("uspsa_scores", JSON.stringify(scores));
+
+  alert(`Score saved! Hit Factor: ${hitFactor.toFixed(4)}`);
+
+  clearScore();
+  showScreen("scoring");
+}
+
+function exportResults() {
+  const scores = JSON.parse(localStorage.getItem("uspsa_scores") || "[]");
+
+  if (scores.length === 0) {
+    alert("No scores to export");
+    return;
+  }
+
+  const headers = [
+    "Date",
+    "Shooter",
+    "Stage",
+    "Time",
+    "Points",
+    "Hit Factor",
+    "Shots Fired",
+  ];
+  const csvContent = [
+    headers.join(","),
+    ...scores.map((score) =>
+      [
+        score.date,
+        score.shooter,
+        score.stage,
+        score.time.toFixed(2),
+        score.points,
+        score.hitFactor.toFixed(4),
+        score.shotsFired,
+      ].join(",")
+    ),
+  ].join("\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv" });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `uspsa_scores_${new Date().toISOString().split("T")[0]}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+}
+
+function loadResults() {
+  const scores = JSON.parse(localStorage.getItem("uspsa_scores") || "[]");
+  const resultsContent = document.getElementById("resultsContent");
+
+  populateStageFilter(scores);
+
+  if (scores.length === 0) {
+    resultsContent.innerHTML =
+      "<p>No scores recorded yet. Start scoring to see results here!</p>";
+    return;
+  }
+
+  const selectedStage = document.getElementById("stageFilter").value;
+  let filteredScores = scores;
+
+  if (selectedStage) {
+    filteredScores = scores.filter((score) => score.stage === selectedStage);
+  }
+
+  if (filteredScores.length === 0) {
+    resultsContent.innerHTML = "<p>No scores found for the selected stage.</p>";
+    return;
+  }
+
+  filteredScores.sort((a, b) => b.hitFactor - a.hitFactor);
+
+  const bestHF = filteredScores[0].hitFactor;
+  const avgHF =
+    filteredScores.reduce((sum, score) => sum + score.hitFactor, 0) /
+    filteredScores.length;
+  const bestTime = Math.min(...filteredScores.map((score) => score.time));
+  const avgTime =
+    filteredScores.reduce((sum, score) => sum + score.time, 0) /
+    filteredScores.length;
+
+  const stageTitle = selectedStage
+    ? `Results for: ${selectedStage}`
+    : "All Stages";
+
+  const resultsHtml = `
+        <div class="results-summary">
+            <h3>${stageTitle}</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <strong>Total Scores:</strong> ${filteredScores.length}
+                </div>
+                <div class="stat-item">
+                    <strong>Best HF:</strong> ${bestHF.toFixed(4)}
+                </div>
+                <div class="stat-item">
+                    <strong>Avg HF:</strong> ${avgHF.toFixed(4)}
+                </div>
+                <div class="stat-item">
+                    <strong>Best Time:</strong> ${bestTime.toFixed(2)}s
+                </div>
+                <div class="stat-item">
+                    <strong>Avg Time:</strong> ${avgTime.toFixed(2)}s
+                </div>
+            </div>
+        </div>
+        <div class="stage-list">
+            ${filteredScores
+              .map(
+                (score, index) => `
+                <div class="stage-item">
+                    <h4>#${index + 1} - ${score.shooter}</h4>
+                    <p><strong>HF:</strong> ${score.hitFactor.toFixed(
+                      4
+                    )} | <strong>Time:</strong> ${score.time.toFixed(
+                  2
+                )}s | <strong>Points:</strong> ${score.points}</p>
+                    <p><strong>Stage:</strong> ${
+                      score.stage
+                    } | <strong>Date:</strong> ${score.date}</p>
+                </div>
+            `
+              )
+              .join("")}
+        </div>
+    `;
+
+  resultsContent.innerHTML = resultsHtml;
+}
+
+function populateStageFilter(scores) {
+  const stageFilter = document.getElementById("stageFilter");
+  const currentSelection = stageFilter.value;
+
+  const uniqueStages = [...new Set(scores.map((score) => score.stage))].sort();
+
+  stageFilter.innerHTML = '<option value="">All Stages</option>';
+
+  uniqueStages.forEach((stageName) => {
+    const option = document.createElement("option");
+    option.value = stageName;
+    option.textContent = stageName;
+    stageFilter.appendChild(option);
+  });
+
+  if (currentSelection && uniqueStages.includes(currentSelection)) {
+    stageFilter.value = currentSelection;
+  }
+}
+
+function quickScore() {
+  currentStage = {
+    id: "quick",
+    name: "Quick Stage",
+    paperTargets: 6,
+    steelTargets: 4,
+    maxPoints: 80,
+  };
+
+  setupScoringScreen();
+  showScreen("scoring");
+}
+
+function deleteStage(stageId) {
+  if (confirm("Are you sure you want to delete this stage?")) {
+    let stages = JSON.parse(localStorage.getItem("uspsa_stages") || "[]");
+    stages = stages.filter((stage) => stage.id !== stageId);
+    localStorage.setItem("uspsa_stages", JSON.stringify(stages));
+    loadStages();
+  }
+}
+
+function editStage(stageId) {
+  const stages = JSON.parse(localStorage.getItem("uspsa_stages") || "[]");
+  const stage = stages.find((s) => s.id === stageId);
+
+  if (stage) {
+    document.getElementById("stageName").value = stage.name;
+    document.getElementById("paperTargets").textContent = stage.paperTargets;
+    document.getElementById("steelTargets").textContent = stage.steelTargets;
+    document.getElementById("stageNotes").value = stage.notes || "";
+    updateMaxPoints();
+
+    showScreen("stage-setup");
+
+    window.editingStageId = stageId;
+  }
+}
+
+function duplicateStage(stageId) {
+  const stages = JSON.parse(localStorage.getItem("uspsa_stages") || "[]");
+  const stage = stages.find((s) => s.id === stageId);
+
+  if (stage) {
+    const duplicatedStage = {
+      ...stage,
+      id: Date.now(),
+      name: stage.name + " (Copy)",
+      created: new Date().toLocaleDateString(),
+    };
+
+    stages.push(duplicatedStage);
+    localStorage.setItem("uspsa_stages", JSON.stringify(stages));
+    loadStages();
+    alert("Stage duplicated successfully!");
+  }
+}
+
+function clearAllData() {
+  if (confirm("This will delete ALL stages and scores. Are you sure?")) {
+    localStorage.removeItem("uspsa_stages");
+    localStorage.removeItem("uspsa_scores");
+    localStorage.removeItem("uspsa_app_initialized");
+    alert("All data cleared!");
+    location.reload();
+  }
+}
+
+document.addEventListener("contextmenu", function (e) {
+  if (
+    e.target.classList.contains("score-btn") ||
+    e.target.classList.contains("steel-btn")
+  ) {
+    e.preventDefault();
+  }
+});
+
+document.addEventListener("keydown", function (e) {
+  if (!document.getElementById("scoring").classList.contains("active")) return;
+
+  if (e.code === "Escape") {
+    e.preventDefault();
+    clearScore();
+  }
+
+  if (
+    e.code === "Enter" &&
+    document.getElementById("shooterName").value.trim() &&
+    document.getElementById("shooterTime").value.trim()
+  ) {
+    e.preventDefault();
+    reviewScore();
+  }
+});
+
+function initializeApp() {
+  const hasRun = localStorage.getItem("uspsa_app_initialized");
+
+  if (!hasRun) {
+    const sampleStages = [
+      {
+        id: Date.now(),
+        name: "Sample Stage 1",
+        paperTargets: 6,
+        steelTargets: 4,
+        notes: "Sample stage for testing",
+        maxPoints: 80,
+        created: new Date().toLocaleDateString(),
+      },
+    ];
+
+    localStorage.setItem("uspsa_stages", JSON.stringify(sampleStages));
+    localStorage.setItem("uspsa_app_initialized", "true");
+  }
+}
+
+initializeApp();
