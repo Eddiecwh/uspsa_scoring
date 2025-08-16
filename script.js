@@ -1,3 +1,146 @@
+function showToast(message, type = "info", duration = 4000) {
+  const container = document.getElementById("toastContainer");
+
+  const toastId = `toast-${Date.now()}`;
+  const bgClass = getBootstrapBgClass(type);
+  const icon = getToastIcon(type);
+  const title = getToastTitle(type);
+
+  const toastHtml = `
+    <div class="toast align-items-center text-bg-${bgClass} border-0" role="alert" id="${toastId}" data-bs-autohide="true" data-bs-delay="${duration}">
+      <div class="d-flex">
+        <div class="toast-body">
+          <strong>${icon} ${title}:</strong> ${message}
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+  `;
+
+  container.insertAdjacentHTML("beforeend", toastHtml);
+
+  const toastElement = document.getElementById(toastId);
+  const toast = new bootstrap.Toast(toastElement);
+  toast.show();
+
+  toastElement.addEventListener("hidden.bs.toast", () => {
+    toastElement.remove();
+  });
+}
+
+function getBootstrapBgClass(type) {
+  switch (type) {
+    case "success":
+      return "success";
+    case "error":
+      return "danger";
+    case "warning":
+      return "warning";
+    default:
+      return "primary";
+  }
+}
+
+function getToastIcon(type) {
+  switch (type) {
+    case "success":
+      return "✅";
+    case "error":
+      return "❌";
+    case "warning":
+      return "⚠️";
+    default:
+      return "ℹ️";
+  }
+}
+
+function getToastTitle(type) {
+  switch (type) {
+    case "success":
+      return "Success";
+    case "error":
+      return "Error";
+    case "warning":
+      return "Warning";
+    default:
+      return "Info";
+  }
+}
+
+function showConfirmToast(message, onConfirm, onCancel = null) {
+  const container = document.getElementById("toastContainer");
+
+  const toastId = `toast-${Date.now()}`;
+
+  const toastHtml = `
+    <div class="toast align-items-center text-bg-warning border-0" role="alert" id="${toastId}" data-bs-autohide="false">
+      <div class="toast-body">
+        <div class="mb-2">
+          <strong>❓ Confirm:</strong> ${message}
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-success" onclick="handleConfirm('${toastId}', true)">Yes</button>
+          <button class="btn btn-sm btn-secondary" onclick="handleConfirm('${toastId}', false)">No</button>
+        </div>
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  `;
+
+  container.insertAdjacentHTML("beforeend", toastHtml);
+
+  const toastElement = document.getElementById(toastId);
+  const toast = new bootstrap.Toast(toastElement);
+  toast.show();
+
+  window[`confirmCallback_${toastId}`] = onConfirm;
+  window[`cancelCallback_${toastId}`] = onCancel;
+
+  toastElement.addEventListener("hidden.bs.toast", () => {
+    delete window[`confirmCallback_${toastId}`];
+    delete window[`cancelCallback_${toastId}`];
+    toastElement.remove();
+  });
+}
+
+function handleConfirm(toastId, confirmed) {
+  const confirmCallback = window[`confirmCallback_${toastId}`];
+  const cancelCallback = window[`cancelCallback_${toastId}`];
+
+  if (confirmed && confirmCallback) {
+    confirmCallback();
+  } else if (!confirmed && cancelCallback) {
+    cancelCallback();
+  }
+
+  const toastElement = document.getElementById(toastId);
+  const toast = bootstrap.Toast.getInstance(toastElement);
+  toast.hide();
+}
+function validateAllTargetsScored() {
+  for (let i = 0; i < currentScore.targets.length; i++) {
+    const target = currentScore.targets[i];
+    const totalHits =
+      target.alpha +
+      target.charlie +
+      target.delta +
+      target.mike +
+      target.noshoot +
+      target.npm;
+
+    if (totalHits < 2) {
+      showToast(
+        `Target ${
+          i + 1
+        } needs at least 2 hits. Please score all targets with minimum 2 hits before proceeding.`,
+        "warning",
+        5000
+      );
+      return false;
+    }
+  }
+  return true;
+}
 let currentStage = null;
 let timerRunning = false;
 let timerStart = 0;
@@ -70,7 +213,7 @@ function saveStage() {
   stages.push(stage);
   localStorage.setItem("uspsa_stages", JSON.stringify(stages));
 
-  alert("Stage saved successfully!");
+  showToast("Stage saved successfully!", "success");
   loadStages();
 }
 
@@ -196,7 +339,7 @@ function setupScoringScreen() {
 
   for (let i = 0; i < currentStage.paperTargets; i++) {
     const targetRow = document.createElement("div");
-    targetRow.className = "target-row";
+    targetRow.className = "target-row target-unscored";
     targetRow.innerHTML = `
             <div class="target-header">
                 <span class="target-title">Target ${i + 1}</span>
@@ -318,7 +461,7 @@ function handleLongPressEnd(event) {
 
   setTimeout(() => {
     isLongPress = false;
-  }, 100);
+  }, 150);
 }
 
 function resetScoreButton(targetIndex, scoreType) {
@@ -381,7 +524,7 @@ function selectScore(targetIndex, scoreType) {
     ["alpha", "charlie", "delta", "mike"].includes(scoreType)
   ) {
     target[scoreType]--;
-    alert("Maximum 2 scoring hits per target (A, C, D, M)!");
+    showToast("Maximum 2 scoring hits per target (A, C, D, M)!", "warning");
     return;
   }
 
@@ -450,11 +593,31 @@ function toggleSteel(index) {
 function updateScorePreview() {
   let totalPoints = 0;
 
-  currentScore.targets.forEach((target) => {
+  currentScore.targets.forEach((target, index) => {
     const { bestHits } = calculateBestHits(target);
     bestHits.forEach((hit) => {
       totalPoints += hit.value;
     });
+
+    const targetRow = document
+      .querySelector(`[data-target="${index}"]`)
+      ?.closest(".target-row");
+    if (targetRow) {
+      const totalHits =
+        target.alpha +
+        target.charlie +
+        target.delta +
+        target.mike +
+        target.noshoot +
+        target.npm;
+      if (totalHits < 2) {
+        targetRow.classList.add("target-unscored");
+        targetRow.classList.remove("target-scored");
+      } else {
+        targetRow.classList.add("target-scored");
+        targetRow.classList.remove("target-unscored");
+      }
+    }
   });
 
   currentScore.steel.forEach((hit) => {
@@ -475,7 +638,7 @@ function updateScorePreview() {
 }
 
 function clearScore() {
-  if (confirm("Clear all scoring data?")) {
+  showConfirmToast("Clear all scoring data?", () => {
     resetAllScores();
     document.getElementById("shooterName").value = "";
     document.getElementById("shooterTime").value = "";
@@ -503,7 +666,8 @@ function clearScore() {
     });
 
     document.getElementById("resultsPreview").style.display = "none";
-  }
+    showToast("Scoring data cleared", "info");
+  });
 }
 
 function resetAllScores() {
@@ -535,12 +699,16 @@ function reviewScore() {
   const timeInput = document.getElementById("shooterTime").value.trim();
 
   if (!shooterName) {
-    alert("Please enter shooter name");
+    showToast("Please enter shooter name", "warning");
     return;
   }
 
   if (!timeInput || parseFloat(timeInput) <= 0) {
-    alert("Please enter a valid time");
+    showToast("Please enter a valid time", "warning");
+    return;
+  }
+
+  if (!validateAllTargetsScored()) {
     return;
   }
 
@@ -627,6 +795,10 @@ function finalSaveScore() {
   const timeInput = document.getElementById("shooterTime").value.trim();
   const time = parseFloat(timeInput);
 
+  if (!validateAllTargetsScored()) {
+    return;
+  }
+
   currentScore.time = time;
 
   let totalPoints = 0;
@@ -670,7 +842,7 @@ function finalSaveScore() {
   scores.push(scoreRecord);
   localStorage.setItem("uspsa_scores", JSON.stringify(scores));
 
-  alert(`Score saved! Hit Factor: ${hitFactor.toFixed(4)}`);
+  showToast(`Score saved! Hit Factor: ${hitFactor.toFixed(4)}`, "success");
 
   clearScore();
   showScreen("scoring");
@@ -680,7 +852,7 @@ function exportResults() {
   const scores = JSON.parse(localStorage.getItem("uspsa_scores") || "[]");
 
   if (scores.length === 0) {
-    alert("No scores to export");
+    showToast("No scores to export", "warning");
     return;
   }
 
@@ -837,12 +1009,13 @@ function quickScore() {
 }
 
 function deleteStage(stageId) {
-  if (confirm("Are you sure you want to delete this stage?")) {
+  showConfirmToast("Are you sure you want to delete this stage?", () => {
     let stages = JSON.parse(localStorage.getItem("uspsa_stages") || "[]");
     stages = stages.filter((stage) => stage.id !== stageId);
     localStorage.setItem("uspsa_stages", JSON.stringify(stages));
     loadStages();
-  }
+    showToast("Stage deleted successfully", "success");
+  });
 }
 
 function editStage(stageId) {
@@ -877,18 +1050,23 @@ function duplicateStage(stageId) {
     stages.push(duplicatedStage);
     localStorage.setItem("uspsa_stages", JSON.stringify(stages));
     loadStages();
-    alert("Stage duplicated successfully!");
+    showToast("Stage duplicated successfully!", "success");
   }
 }
 
 function clearAllData() {
-  if (confirm("This will delete ALL stages and scores. Are you sure?")) {
-    localStorage.removeItem("uspsa_stages");
-    localStorage.removeItem("uspsa_scores");
-    localStorage.removeItem("uspsa_app_initialized");
-    alert("All data cleared!");
-    location.reload();
-  }
+  showConfirmToast(
+    "This will delete ALL stages and scores. Are you sure?",
+    () => {
+      localStorage.removeItem("uspsa_stages");
+      localStorage.removeItem("uspsa_scores");
+      localStorage.removeItem("uspsa_app_initialized");
+      showToast("All data cleared!", "success");
+      setTimeout(() => {
+        location.reload();
+      }, 1500);
+    }
+  );
 }
 
 document.addEventListener("contextmenu", function (e) {
