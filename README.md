@@ -2,6 +2,8 @@
 
 # USPSA Scoring App
 
+Access the app [here](https://eddiecwh.github.io/uspsa_scoring/)
+
 ![Version](https://img.shields.io/badge/version-2.1-orange.svg)
 
 **A modern, mobile-friendly USPSA scoring application**
@@ -172,3 +174,4 @@ Filter by stage or view all results together!
 ⭐ Star this repo if you find it helpful!
 
 </div>
+
