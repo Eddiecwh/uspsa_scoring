@@ -1,146 +1,3 @@
-function showToast(message, type = "info", duration = 4000) {
-  const container = document.getElementById("toastContainer");
-
-  const toastId = `toast-${Date.now()}`;
-  const bgClass = getBootstrapBgClass(type);
-  const icon = getToastIcon(type);
-  const title = getToastTitle(type);
-
-  const toastHtml = `
-    <div class="toast align-items-center text-bg-${bgClass} border-0" role="alert" id="${toastId}" data-bs-autohide="true" data-bs-delay="${duration}">
-      <div class="d-flex">
-        <div class="toast-body">
-          <strong>${icon} ${title}:</strong> ${message}
-        </div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-      </div>
-    </div>
-  `;
-
-  container.insertAdjacentHTML("beforeend", toastHtml);
-
-  const toastElement = document.getElementById(toastId);
-  const toast = new bootstrap.Toast(toastElement);
-  toast.show();
-
-  toastElement.addEventListener("hidden.bs.toast", () => {
-    toastElement.remove();
-  });
-}
-
-function getBootstrapBgClass(type) {
-  switch (type) {
-    case "success":
-      return "success";
-    case "error":
-      return "danger";
-    case "warning":
-      return "warning";
-    default:
-      return "primary";
-  }
-}
-
-function getToastIcon(type) {
-  switch (type) {
-    case "success":
-      return "✅";
-    case "error":
-      return "❌";
-    case "warning":
-      return "⚠️";
-    default:
-      return "ℹ️";
-  }
-}
-
-function getToastTitle(type) {
-  switch (type) {
-    case "success":
-      return "Success";
-    case "error":
-      return "Error";
-    case "warning":
-      return "Warning";
-    default:
-      return "Info";
-  }
-}
-
-function showConfirmToast(message, onConfirm, onCancel = null) {
-  const container = document.getElementById("toastContainer");
-
-  const toastId = `toast-${Date.now()}`;
-
-  const toastHtml = `
-    <div class="toast align-items-center text-bg-warning border-0" role="alert" id="${toastId}" data-bs-autohide="false">
-      <div class="toast-body">
-        <div class="mb-2">
-          <strong>❓ Confirm:</strong> ${message}
-        </div>
-        <div class="d-flex gap-2">
-          <button class="btn btn-sm btn-success" onclick="handleConfirm('${toastId}', true)">Yes</button>
-          <button class="btn btn-sm btn-secondary" onclick="handleConfirm('${toastId}', false)">No</button>
-        </div>
-      </div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-    </div>
-  `;
-
-  container.insertAdjacentHTML("beforeend", toastHtml);
-
-  const toastElement = document.getElementById(toastId);
-  const toast = new bootstrap.Toast(toastElement);
-  toast.show();
-
-  window[`confirmCallback_${toastId}`] = onConfirm;
-  window[`cancelCallback_${toastId}`] = onCancel;
-
-  toastElement.addEventListener("hidden.bs.toast", () => {
-    delete window[`confirmCallback_${toastId}`];
-    delete window[`cancelCallback_${toastId}`];
-    toastElement.remove();
-  });
-}
-
-function handleConfirm(toastId, confirmed) {
-  const confirmCallback = window[`confirmCallback_${toastId}`];
-  const cancelCallback = window[`cancelCallback_${toastId}`];
-
-  if (confirmed && confirmCallback) {
-    confirmCallback();
-  } else if (!confirmed && cancelCallback) {
-    cancelCallback();
-  }
-
-  const toastElement = document.getElementById(toastId);
-  const toast = bootstrap.Toast.getInstance(toastElement);
-  toast.hide();
-}
-function validateAllTargetsScored() {
-  for (let i = 0; i < currentScore.targets.length; i++) {
-    const target = currentScore.targets[i];
-    const totalHits =
-      target.alpha +
-      target.charlie +
-      target.delta +
-      target.mike +
-      target.noshoot +
-      target.npm;
-
-    if (totalHits < 2) {
-      showToast(
-        `Target ${
-          i + 1
-        } needs at least 2 hits. Please score all targets with minimum 2 hits before proceeding.`,
-        "warning",
-        5000
-      );
-      return false;
-    }
-  }
-  return true;
-}
 let currentStage = null;
 let timerRunning = false;
 let timerStart = 0;
@@ -213,7 +70,7 @@ function saveStage() {
   stages.push(stage);
   localStorage.setItem("uspsa_stages", JSON.stringify(stages));
 
-  showToast("Stage saved successfully!", "success");
+  alert("Stage saved successfully!");
   loadStages();
 }
 
@@ -292,41 +149,17 @@ function setupScoringScreen() {
     const steelBtn = document.createElement("div");
     steelBtn.className = "steel-btn";
     steelBtn.textContent = `S${i + 1}`;
-
-    let touchStartTime = 0;
-    let touchMoved = false;
-
-    steelBtn.addEventListener("touchstart", (e) => {
-      touchStartTime = Date.now();
-      touchMoved = false;
-      handleLongPressStart(e, () => resetSteel(i));
-    });
-
-    steelBtn.addEventListener("touchmove", (e) => {
-      touchMoved = true;
-    });
-
-    steelBtn.addEventListener("touchend", (e) => {
-      e.preventDefault();
-      handleLongPressEnd(e);
-
-      if (!touchMoved && !isLongPress) {
-        toggleSteel(i);
-      }
-    });
-
-    steelBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      if (!isLongPress) {
-        toggleSteel(i);
-      }
-    });
+    steelBtn.onclick = () => toggleSteel(i);
 
     steelBtn.addEventListener("mousedown", (e) =>
       handleLongPressStart(e, () => resetSteel(i))
     );
+    steelBtn.addEventListener("touchstart", (e) =>
+      handleLongPressStart(e, () => resetSteel(i))
+    );
     steelBtn.addEventListener("mouseup", handleLongPressEnd);
     steelBtn.addEventListener("mouseleave", handleLongPressEnd);
+    steelBtn.addEventListener("touchend", handleLongPressEnd);
     steelBtn.addEventListener("touchcancel", handleLongPressEnd);
 
     steelGrid.appendChild(steelBtn);
@@ -339,7 +172,7 @@ function setupScoringScreen() {
 
   for (let i = 0; i < currentStage.paperTargets; i++) {
     const targetRow = document.createElement("div");
-    targetRow.className = "target-row target-unscored";
+    targetRow.className = "target-row";
     targetRow.innerHTML = `
             <div class="target-header">
                 <span class="target-title">Target ${i + 1}</span>
@@ -398,28 +231,6 @@ function setupScoringScreen() {
       const targetIndex = parseInt(button.dataset.target);
       const scoreType = button.dataset.score;
 
-      let touchStartTime = 0;
-      let touchMoved = false;
-
-      button.addEventListener("touchstart", (e) => {
-        touchStartTime = Date.now();
-        touchMoved = false;
-        handleLongPressStart(e, () => resetScoreButton(targetIndex, scoreType));
-      });
-
-      button.addEventListener("touchmove", (e) => {
-        touchMoved = true;
-      });
-
-      button.addEventListener("touchend", (e) => {
-        e.preventDefault();
-        handleLongPressEnd(e);
-
-        if (!touchMoved && !isLongPress) {
-          selectScore(targetIndex, scoreType);
-        }
-      });
-
       button.addEventListener("click", (e) => {
         e.preventDefault();
         if (!isLongPress) {
@@ -430,8 +241,12 @@ function setupScoringScreen() {
       button.addEventListener("mousedown", (e) =>
         handleLongPressStart(e, () => resetScoreButton(targetIndex, scoreType))
       );
+      button.addEventListener("touchstart", (e) =>
+        handleLongPressStart(e, () => resetScoreButton(targetIndex, scoreType))
+      );
       button.addEventListener("mouseup", handleLongPressEnd);
       button.addEventListener("mouseleave", handleLongPressEnd);
+      button.addEventListener("touchend", handleLongPressEnd);
       button.addEventListener("touchcancel", handleLongPressEnd);
     });
   }
@@ -461,7 +276,7 @@ function handleLongPressEnd(event) {
 
   setTimeout(() => {
     isLongPress = false;
-  }, 150);
+  }, 50);
 }
 
 function resetScoreButton(targetIndex, scoreType) {
@@ -524,7 +339,7 @@ function selectScore(targetIndex, scoreType) {
     ["alpha", "charlie", "delta", "mike"].includes(scoreType)
   ) {
     target[scoreType]--;
-    showToast("Maximum 2 scoring hits per target (A, C, D, M)!", "warning");
+    alert("Maximum 2 scoring hits per target (A, C, D, M)!");
     return;
   }
 
@@ -552,14 +367,14 @@ function calculateBestHits(target) {
   const totalNoShoots = target.noshoot;
   const totalNPMs = target.npm;
 
-  const effectiveNoShoots = Math.min(totalNoShoots, 2 - bestScoringHits.length);
+  for (let i = 0; i < totalNoShoots; i++)
+    penalties.push({ type: "noshoot", value: -10 });
+
   const effectiveMikes = Math.min(
     totalMikes,
-    Math.max(0, 2 - bestScoringHits.length - effectiveNoShoots)
+    Math.max(0, 2 - bestScoringHits.length)
   );
 
-  for (let i = 0; i < effectiveNoShoots; i++)
-    penalties.push({ type: "noshoot", value: -10 });
   for (let i = 0; i < effectiveMikes; i++)
     penalties.push({ type: "mike", value: -10 });
 
@@ -593,31 +408,11 @@ function toggleSteel(index) {
 function updateScorePreview() {
   let totalPoints = 0;
 
-  currentScore.targets.forEach((target, index) => {
+  currentScore.targets.forEach((target) => {
     const { bestHits } = calculateBestHits(target);
     bestHits.forEach((hit) => {
       totalPoints += hit.value;
     });
-
-    const targetRow = document
-      .querySelector(`[data-target="${index}"]`)
-      ?.closest(".target-row");
-    if (targetRow) {
-      const totalHits =
-        target.alpha +
-        target.charlie +
-        target.delta +
-        target.mike +
-        target.noshoot +
-        target.npm;
-      if (totalHits < 2) {
-        targetRow.classList.add("target-unscored");
-        targetRow.classList.remove("target-scored");
-      } else {
-        targetRow.classList.add("target-scored");
-        targetRow.classList.remove("target-unscored");
-      }
-    }
   });
 
   currentScore.steel.forEach((hit) => {
@@ -638,7 +433,7 @@ function updateScorePreview() {
 }
 
 function clearScore() {
-  showConfirmToast("Clear all scoring data?", () => {
+  if (confirm("Clear all scoring data?")) {
     resetAllScores();
     document.getElementById("shooterName").value = "";
     document.getElementById("shooterTime").value = "";
@@ -666,8 +461,7 @@ function clearScore() {
     });
 
     document.getElementById("resultsPreview").style.display = "none";
-    showToast("Scoring data cleared", "info");
-  });
+  }
 }
 
 function resetAllScores() {
@@ -699,16 +493,12 @@ function reviewScore() {
   const timeInput = document.getElementById("shooterTime").value.trim();
 
   if (!shooterName) {
-    showToast("Please enter shooter name", "warning");
+    alert("Please enter shooter name");
     return;
   }
 
   if (!timeInput || parseFloat(timeInput) <= 0) {
-    showToast("Please enter a valid time", "warning");
-    return;
-  }
-
-  if (!validateAllTargetsScored()) {
+    alert("Please enter a valid time");
     return;
   }
 
@@ -795,10 +585,6 @@ function finalSaveScore() {
   const timeInput = document.getElementById("shooterTime").value.trim();
   const time = parseFloat(timeInput);
 
-  if (!validateAllTargetsScored()) {
-    return;
-  }
-
   currentScore.time = time;
 
   let totalPoints = 0;
@@ -842,7 +628,7 @@ function finalSaveScore() {
   scores.push(scoreRecord);
   localStorage.setItem("uspsa_scores", JSON.stringify(scores));
 
-  showToast(`Score saved! Hit Factor: ${hitFactor.toFixed(4)}`, "success");
+  alert(`Score saved! Hit Factor: ${hitFactor.toFixed(4)}`);
 
   clearScore();
   showScreen("scoring");
@@ -852,7 +638,7 @@ function exportResults() {
   const scores = JSON.parse(localStorage.getItem("uspsa_scores") || "[]");
 
   if (scores.length === 0) {
-    showToast("No scores to export", "warning");
+    alert("No scores to export");
     return;
   }
 
@@ -1009,13 +795,12 @@ function quickScore() {
 }
 
 function deleteStage(stageId) {
-  showConfirmToast("Are you sure you want to delete this stage?", () => {
+  if (confirm("Are you sure you want to delete this stage?")) {
     let stages = JSON.parse(localStorage.getItem("uspsa_stages") || "[]");
     stages = stages.filter((stage) => stage.id !== stageId);
     localStorage.setItem("uspsa_stages", JSON.stringify(stages));
     loadStages();
-    showToast("Stage deleted successfully", "success");
-  });
+  }
 }
 
 function editStage(stageId) {
@@ -1050,23 +835,18 @@ function duplicateStage(stageId) {
     stages.push(duplicatedStage);
     localStorage.setItem("uspsa_stages", JSON.stringify(stages));
     loadStages();
-    showToast("Stage duplicated successfully!", "success");
+    alert("Stage duplicated successfully!");
   }
 }
 
 function clearAllData() {
-  showConfirmToast(
-    "This will delete ALL stages and scores. Are you sure?",
-    () => {
-      localStorage.removeItem("uspsa_stages");
-      localStorage.removeItem("uspsa_scores");
-      localStorage.removeItem("uspsa_app_initialized");
-      showToast("All data cleared!", "success");
-      setTimeout(() => {
-        location.reload();
-      }, 1500);
-    }
-  );
+  if (confirm("This will delete ALL stages and scores. Are you sure?")) {
+    localStorage.removeItem("uspsa_stages");
+    localStorage.removeItem("uspsa_scores");
+    localStorage.removeItem("uspsa_app_initialized");
+    alert("All data cleared!");
+    location.reload();
+  }
 }
 
 document.addEventListener("contextmenu", function (e) {

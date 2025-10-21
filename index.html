@@ -18,7 +18,7 @@
     <div class="container">
       <div class="header">
         <h1><i class="fas fa-bullseye"></i> USPSA Scoring</h1>
-        <p>HF Scoring System v2.0 - Eddie C. 8/15/25</p>
+        <p>HF Scoring System v2.1 - Eddie C. 8/15/25</p>
       </div>
 
       <!-- Bootstrap Toast Container -->
@@ -150,9 +150,7 @@
         </div>
         <h2>Stage Library</h2>
 
-        <div class="stage-list" id="stageList">
-          <!-- Stages will be populated here -->
-        </div>
+        <div class="stage-list" id="stageList"></div>
 
         <div class="navigation">
           <button class="btn btn-secondary" onclick="showScreen('dashboard')">
@@ -172,36 +170,34 @@
         </div>
         <h2 id="currentStageName">Stage Name</h2>
 
-        <div class="input-group">
-          <label>Shooter Name</label>
-          <input
-            type="text"
-            id="shooterName"
-            placeholder="Enter shooter name"
-          />
-        </div>
+        <div class="shooter-info">
+          <div class="input-group">
+            <label>Shooter Name</label>
+            <input
+              type="text"
+              id="shooterName"
+              placeholder="Enter shooter name"
+            />
+          </div>
 
-        <div class="input-group">
-          <label>Time (seconds)</label>
-          <input
-            type="number"
-            id="shooterTime"
-            placeholder="Enter time in seconds"
-            step="0.01"
-            min="0"
-          />
+          <div class="input-group">
+            <label>Time (seconds)</label>
+            <input
+              type="number"
+              id="shooterTime"
+              placeholder="Enter time in seconds"
+              step="0.01"
+              min="0"
+            />
+          </div>
         </div>
 
         <div class="steel-section">
           <h3><i class="fas fa-circle"></i> Steel Targets</h3>
-          <div class="steel-grid" id="steelGrid">
-            <!-- Steel targets will be populated here -->
-          </div>
+          <div class="steel-grid" id="steelGrid"></div>
         </div>
 
-        <div class="target-grid" id="targetGrid">
-          <!-- Paper targets will be populated here -->
-        </div>
+        <div class="target-grid" id="targetGrid"></div>
 
         <div class="results-summary" id="resultsPreview" style="display: none">
           <h3>Score Preview</h3>
@@ -290,6 +286,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="script.js"></script>
+    <script type="module" src="app.js"></script>
   </body>
 </html>

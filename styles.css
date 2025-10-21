@@ -1,11 +1,4 @@
-/* Remove custom toast styles - using Bootstrap instead */
-.screen h2 {
-  text-align: center;
-  margin-bottom: 30px;
-  color: #ff6b35;
-  font-size: 2rem;
-  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
-} /* General styles */
+/* General styles */
 * {
   margin: 0;
   padding: 0;
@@ -136,6 +129,16 @@ body {
 
 .input-group {
   margin-bottom: 20px;
+}
+
+.shooter-info {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: black;
+  padding: 15px 0;
+  margin-bottom: 20px;
+  border-bottom: 2px solid rgba(255, 107, 53, 0.3);
 }
 
 .input-group label {
@@ -272,15 +275,6 @@ body {
 .target-title {
   font-size: 1.2rem;
   font-weight: bold;
-}
-
-.target-unscored {
-  border-color: #e74c3c !important;
-  box-shadow: 0 0 10px rgba(231, 76, 60, 0.5) !important;
-}
-
-.target-scored {
-  border-color: rgba(255, 107, 53, 0.3);
 }
 
 .scoring-buttons {
